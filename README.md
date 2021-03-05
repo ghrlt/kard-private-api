@@ -1,4 +1,4 @@
-# A private API for Kard ban interaction
+# A private API for Kard bank interaction
 
 
 I did this by accident, I wanted to do a private api of my Wiz lamp but I haven't succeeded yet. and so, I wanted to look at my bank app..
