@@ -175,6 +175,7 @@ def login(num=NUM, code=CODE):
 	Get account information (Child)
 '''
 class Account:
+
 	#get account creation date
 	def creationDate():
 
@@ -518,7 +519,7 @@ class Account:
 		return response.status_code
 
 	#change account phone number
-	def setPhone(new, code): #I dunno what API support, +33 6 00 00 00 00 format recommanded
+	def setPhone(new, code=CODE): #I dunno what API support, +33 6 00 00 00 00 format recommanded
 
 		phone=new
 		code=code
@@ -1548,7 +1549,7 @@ class Account:
 			url = data['data']['topupAccount']['secureFormUrl']
 
 			webbrowser.open(url, new=2)
-			return "You now need to confirm 3D Secure code here: " url 
+			return "You now need to confirm 3D Secure code here: " + url 
 
 		#Send money to friend
 		def send():
@@ -1562,13 +1563,13 @@ class Account:
 		def __init__(self, name=""):
 			self.name=name
 		
-		#Get vault ID		If name==all, return all vaults ; if name = VaultName, return the id for it
+		#Get vault ID
 		def id(self):
 			name = self.name
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidListVault { me { vaults { ... Vault_VaultParts } }}\\n\\nfragment Vault_VaultParts on Vault { id name }\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
 			    'content-length': "218",
@@ -1582,57 +1583,22 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload, headers=headers)
-
 			data = json.loads(response.text)
 
-			if name == "all":
-				ids = []
-				for vault in data["data"]["me"]["vaults"]:
-					ids.append(vault["id"])
+			for vault in data["data"]["me"]["vaults"]:
+				if vault["name"] == name:
+					return vault["id"]
 
-				return ids
-
-			else:
-				for vault in data["data"]["me"]["vaults"]:
-					if vault["name"] == name:
-						return vault["id"]
-		#Get vault Emoji	If name==all, return all vaults ; if name = VaultName, return the id for it
+		#Get vault Emoji
 		def emoji(self):
 			name = self.name
-			#To do
-			#payload = "{\"query\":\"query androidListVault { me { vaults { ... Vault_VaultParts } }}\\n\\nfragment Vault_VaultParts on Vault { id name emoji { name unicode }}\",\"variables\":{},\"extensions\":{}}"
-			pass
-		#Get vault Color	If name==all, return all vaults ; if name = VaultName, return the id for it
-		def color(self):
-			name = self.name
-			#To do
-			#payload = "{\"query\":\"query androidListVault { me { vaults { ... Vault_VaultParts } }}\\n\\nfragment Vault_VaultParts on Vault { id name color }\",\"variables\":{},\"extensions\":{}}"
-			pass
-		#Get vault Goal		If name==all, return all vaults ; if name = VaultName, return the id for it
-		def goal(self):
-			name = self.name
-			#To do
-			#payload = "{\"query\":\"query androidListVault { me { vaults { ... Vault_VaultParts } }}\\n\\nfragment Vault_VaultParts on Vault { id name goal { value }}\",\"variables\":{},\"extensions\":{}}"
-			pass
-		#Get vault Balance	If name==all, return all vaults ; if name = VaultName, return the id for it
-		def balance(self):
-			name = self.name
-			#To do
-			#payload = "{\"query\":\"query androidListVault { me { vaults { ... Vault_VaultParts } }}\\n\\nfragment Vault_VaultParts on Vault { id name balance { value }}\",\"variables\":{},\"extensions\":{}}"
-			pass
-
-		#This transfer money from balance to vault
-		def topup(self, amount):
-
-			vault = self.id()
-			amount=amount
 
 			url = "https://api.kard.eu/graphql"
-
-			payload = "{\"query\":\"mutation androidCreditVault($vaultId: ID!, $amount: AmountInput!) { creditVault(input: {vaultId: $vaultId, amount: $amount}) { errors { message path } }}\",\"variables\":{\"amount\":{\"value\":"+amount+",\"currency\":\"EUR\"},\"vaultId\":\""+vault+"\"},\"extensions\":{}}"
+			
+			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name emoji { name unicode }}","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "334",
+			    'content-length': "218",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -1643,12 +1609,123 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
 
-			print(response.text)
+			for vault in data["data"]["me"]["vaults"]:
+				if vault["name"] == name:
+					return vault["emoji"]
+
+		#Get vault Color
+		def color(self):
+			name = self.name
+
+			url = "https://api.kard.eu/graphql"
+			
+			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name color }","variables":{},"extensions":{}}'
+			headers = {
+			    'content-type': "application/json",
+			    'content-length': "218",
+			    'host': "api.kard.eu",
+			    'connection': "Keep-Alive",
+			    'accept-encoding': "gzip",
+			    'user-agent': USERAGENT,
+			    'vendoridentifier': VENDORIDENTIFIER,
+			    'authorization': "Bearer "+TOKEN,
+			    'accept-language': "en"
+			    }
+
+			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
+
+			for vault in data["data"]["me"]["vaults"]:
+				if vault["name"] == name:
+					return vault["color"]
+
+		#Get vault Goal
+		def goal(self):
+			name = self.name
+
+			url = "https://api.kard.eu/graphql"
+		
+			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name goal { value }}","variables":{},"extensions":{}}'
+			headers = {
+			    'content-type': "application/json",
+			    'content-length': "218",
+			    'host': "api.kard.eu",
+			    'connection': "Keep-Alive",
+			    'accept-encoding': "gzip",
+			    'user-agent': USERAGENT,
+			    'vendoridentifier': VENDORIDENTIFIER,
+			    'authorization': "Bearer "+TOKEN,
+			    'accept-language': "en"
+			    }
+
+			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
+
+			for vault in data["data"]["me"]["vaults"]:
+				if vault["name"] == name:
+					return str(vault["goal"]['value']) + "€"
+
+		#Get vault Balance
+		def balance(self):
+			name = self.name
+
+			url = "https://api.kard.eu/graphql"
+
+			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name balance { value }}","variables":{},"extensions":{}}'
+			headers = {
+			    'content-type': "application/json",
+			    'content-length': "218",
+			    'host': "api.kard.eu",
+			    'connection': "Keep-Alive",
+			    'accept-encoding': "gzip",
+			    'user-agent': USERAGENT,
+			    'vendoridentifier': VENDORIDENTIFIER,
+			    'authorization': "Bearer "+TOKEN,
+			    'accept-language': "en"
+			    }
+
+			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
+
+			for vault in data["data"]["me"]["vaults"]:
+				if vault["name"] == name:
+					return str(vault["balance"]["value"]) + "€"
+
+		#This transfer money from balance to vault
+		def topup(self, amount): #Amount of less than 1cents does not throw error, but nothing is done
+
+			vault = self.id()
+			amount=str(amount)
+
+			url = "https://api.kard.eu/graphql"
+
+			payload = '{"query":"mutation androidCreditVault($vaultId: ID!, $amount: AmountInput!) { creditVault(input: {vaultId: $vaultId, amount: $amount}) { errors { message path } }}","variables":{"amount":{"value":'+amount+',"currency":"EUR"},"vaultId":"'+vault+'"},"extensions":{}}'
+			headers = {
+			    'content-type': "application/json",
+			    'content-length': "264",
+			    'host': "api.kard.eu",
+			    'connection': "Keep-Alive",
+			    'accept-encoding': "gzip",
+			    'user-agent': USERAGENT,
+			    'vendoridentifier': VENDORIDENTIFIER,
+			    'authorization': "Bearer "+TOKEN,
+			    'accept-language': "en"
+			    }
+
+			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
+			try:
+				err = data['data']['creditVault']['errors'][0]['message']
+			except:
+				return response
+
+			raise Exception(err)
 
 		#Change vault color
 		def changeColor(self, color):
-			#Official colors. Any HTML color code work :D
+			#Official colors. Any (maybe not) HTML color code work :D
 			colors = {"black":"#1b1d20", "green":"#3ce977",
 						"purpleblack": "#1f193f", "grey":"#75818c",
 							"pink":"#f943b1", "yellow":"#ffca10",
@@ -1662,7 +1739,7 @@ class Account:
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}\",\"variables\":{\"vaultId\":\""+vault+"\",\"color\":\""+color+"\"},\"extensions\":{}}"
+			payload = '{"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":"'+vault+'","color":"'+color+'"},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
 			    'content-length': "378",
@@ -1676,19 +1753,25 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload, headers=headers)
+			data = json.loads(response.text)
+			
+			try:
+				err = data['errors']
+			except:
+				return response
 
-			print(response.text)
+			raise Exception(err[0]['extensions']['problems'][0]['explanation'])
 
 		#Change vault icon
 		def changeEmote(self, emote):
-			emotes = ["🎁", "🎈", "🛍", "💰", "😈", "🎓", "🏝", "🎫", "🎸", "✈️", "👟", "📱", "🎮", "🛴", "🛵"] #If emote not in list, default emote is set (bank building)
+			emotes = ["🎁", "🎈", "🛍", "💰", "😈", "🎓", "🏝", "🎫", "🎸", "✈️", "👟", "📱", "🎮", "🛴", "🛵"] #If emote not in list, a default emote is set (bank building)
 
 			emote=emote
 			vault = self.id()
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}\",\"variables\":{\"vaultId\":\""+vault+"\",\"emoji\":\""+emote+"\"},\"extensions\":{}}"
+			payload = '{"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":"'+vault+'","emoji":"'+emote+'"},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
 			    'content-length': "375",
@@ -1702,21 +1785,28 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload.encode('utf-8'), headers=headers)
+			data = json.loads(response.text)
+			
+			try:
+				err = data['errors']
+			except:
+				return response
 
-			print(response.text)
+			raise Exception(err[0]['extensions']['problems'][0]['explanation'])
+
 
 		#create a vault
-		def create(self, name, goal):
+		def create(self, goal): #Appear to be bug with round amount (1000, 2000, ...), one or two 0 are removed but 99999 work fine
 
-			name=name
-			goal=goal
+			name=self.name
+			goal=str(goal)
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"mutation androidCreateVault($goal: AmountInput!, $name: Name!) { createVault(input: {goal: $goal, name: $name}) { errors { message path } vault { id } }}\",\"variables\":{\"goal\":{\"value\":"+goal+",\"currency\":\"EUR\"},\"name\":\""+name+"\"},\"extensions\":{}}"
+			payload = '{"query":"mutation androidCreateVault($goal: AmountInput!, $name: Name!) { createVault(input: {goal: $goal, name: $name}) { errors { message path } vault { id } }}","variables":{"goal":{"value":'+goal+',"currency":"EUR"},"name":"'+name+'"},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "250",
+			    'content-length': "256",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -1727,17 +1817,21 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload, headers=headers)
+			return response
 
 		#empty a vault
 		def empty(self):
 			id = self.id()
 
+			if id is None:
+				raise Exception('There is no Vault named "'+ self.name + '" !')
+
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"mutation androidCloseVault($vaultId: ID!) { closeVault(input: {vaultId: $vaultId}) { errors { message path } }}\",\"variables\":{\"vaultId\":\""+id+"\"},\"extensions\":{}}"
+			payload = '{"query":"mutation androidCloseVault($vaultId: ID!) { closeVault(input: {vaultId: $vaultId}) { errors { message path } }}","variables":{"vaultId":"'+id+'"},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "252",
+			    'content-length': "172",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -1748,9 +1842,8 @@ class Account:
 			    }
 
 			response = requests.request("POST", url, data=payload, headers=headers)
-
-			print(response.text)
-
+			data = json.loads(response.text)
+			return response
 
 	'''
 		Transactions data
@@ -2006,4 +2099,5 @@ class Account:
 		data = json.loads(response.text)
 
 		return data['data']['me']['referralUrl']
+
 
