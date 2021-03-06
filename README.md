@@ -242,6 +242,7 @@ None
   'total': 609.03
 }
 ```
+
 ### Money related
 ```python
 >>> Account.Money.balance()
@@ -254,7 +255,39 @@ None
 >>> Account.Money.send()
 
 ```
+### Vaults
+```python
+>>> vault = Account.Vault("Savings") #Put the name of the vault you want to use
+>>> vault.create(goal=500)
+<Response [200]>
 
+>>> vault.goal()
+"200€"
+
+>>> vault.id()
+Z2lk[...]GNmYw
+
+>>> vault.topup(amount=50) #Transfer <amount> to the vault
+<Response [200]>
+
+>>> vault.balance()
+"50€"
+
+>>> vault.changeColor("#00ff00")
+<Response [200]>
+
+>>> vault.color()
+"#00ff00"
+
+>>> vault.changeEmote("🏦")
+<Response [200]>
+
+>>> vault.emoji()
+{'name': 'bank', 'unicode': '🏦'}
+
+>>> vault.empty() #Transfer all money on the card and delete the vault
+<Response [200]>
+```
 
 
 
