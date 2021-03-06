@@ -1,0 +1,8 @@
+{
+  "login": {
+    "phone": "06 12 34 56 78",
+    "code": "1234",
+    "token": "",
+    "identifier": "ghrlt:is-that-a-uuid"
+  }
+}
