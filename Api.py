@@ -684,12 +684,13 @@ class Account:
 		Get informations about subscription plan
 	'''
 	class Subscription:
-			#get account subscription status
+	class Subscription:
+		#get account subscription status
 		def Status():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status }","variables":{},"extensions":{}}'
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id status } }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
 			    'content-length': "148",
@@ -712,10 +713,10 @@ class Account:
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id nextBilling { date } }","variables":{},"extensions":{}}'
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id nextBilling { date } } }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "162",
+			    'content-length': "157",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -735,10 +736,10 @@ class Account:
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id nextBilling { amount { value currency { isoCode name symbol symbolFirst } } } plan { id price { value } }}","variables":{},"extensions":{}}'
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { ... Me_SubscriptionParts } }\n\nfragment Me_SubscriptionParts on Subscription { id nextBilling { amount { value currency { isoCode name symbol symbolFirst } } } plan { id price { value } }}","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "246",
+			    'content-length': "319",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -754,14 +755,14 @@ class Account:
 			return data['data']['me']['subscription']['nextBilling']['amount']
 
 		#get account subscription price
-		def SubscriptionPrice():
+		def Price():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id plan { id price { value } }}","variables":{},"extensions":{}}'
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { price { value }} } }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "168",
+			    'content-length': "160",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -777,14 +778,14 @@ class Account:
 			return data['data']['me']['subscription']['plan']['price']['value']
 
 		#get account subscription name
-		def getAccountSubscriptionName():
+		def Name():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id plan { id name }}","variables":{},"extensions":{}}'
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { name } } }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "157",
+			    'content-length': "150",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
@@ -798,6 +799,7 @@ class Account:
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['plan']['name']
+
 
 
 	'''
