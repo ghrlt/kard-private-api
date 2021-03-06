@@ -9,7 +9,7 @@ I did this by accident, I wanted to do a private api of my Wiz lamp but I haven'
 I'm posting on Github today to show you how easy it is to control a Kard bank account, without much more security than that... 
 
 ## Usage
-
+* [Login](#login)
 * [Details](#account-details)
 	* [Set details](#account-set-details)
 * [Parent](#account-parent)
@@ -18,7 +18,23 @@ I'm posting on Github today to show you how easy it is to control a Kard bank ac
 * [Cards](#account-cards)
 
 
+
 > Note: All the "[...]" are there only to hide my personal information. The informations returned by the API are not censored.
+
+### Login
+
+To login, you need to get a unique vendorID (identifier), generate a UUID and replace, or not, by ghrlt by android/ios (in config.json)
+then, login: You can either put a phone number and your access code, or use these from config.json
+```python
+>>> login("06 12 34 56 78", "1234")
+eyJhbGc[...]UIPrUxpZtI
+```
+First login with a identifier will require you to receive a SMS and confirm the OTP code. Python will ask it to you
+Until you change your identifier, you will not need to login
+	
+Some function require your app code, you can either store it in config.json or precize it when you call the function
+
+
 
 ### Account details
 ```python
