@@ -684,21 +684,21 @@ class Account:
 		Get informations about subscription plan
 	'''
 	class Subscription:
-		#get account subscription status
+			#get account subscription status
 		def Status():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "2920",
+			    'content-length': "148",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
+			    'authorization': "Bearer "+TOKEN,
 			    'accept-language': "en"
 			    }
 
@@ -712,16 +712,16 @@ class Account:
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id nextBilling { date } }","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "2920",
+			    'content-length': "162",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
+			    'authorization': "Bearer "+TOKEN,
 			    'accept-language': "en"
 			    }
 
@@ -731,20 +731,20 @@ class Account:
 			return data['data']['me']['subscription']['nextBilling']['date']
 		
 		#get account subscription next billing price
-		def getAccountNextBillingPrice():
+		def NextBillingPrice():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id nextBilling { amount { value currency { isoCode name symbol symbolFirst } } } plan { id price { value } }}","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "2920",
+			    'content-length': "246",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
+			    'authorization': "Bearer "+TOKEN,
 			    'accept-language': "en"
 			    }
 
@@ -754,20 +754,20 @@ class Account:
 			return data['data']['me']['subscription']['nextBilling']['amount']
 
 		#get account subscription price
-		def getAccountSubscriptionPrice():
+		def SubscriptionPrice():
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id plan { id price { value } }}","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "2920",
+			    'content-length': "168",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
+			    'authorization': "Bearer "+TOKEN,
 			    'accept-language': "en"
 			    }
 
@@ -781,16 +781,16 @@ class Account:
 
 			url = "https://api.kard.eu/graphql"
 
-			payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
+			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id plan { id name }}","variables":{},"extensions":{}}'
 			headers = {
 			    'content-type': "application/json",
-			    'content-length': "2920",
+			    'content-length': "157",
 			    'host': "api.kard.eu",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
+			    'authorization': "Bearer "+TOKEN,
 			    'accept-language': "en"
 			    }
 
