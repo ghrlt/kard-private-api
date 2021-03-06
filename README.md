@@ -119,10 +119,10 @@ None
 ]
 
 >>> Account.Cards.PhysicalID()
-Z2lk[...]3ZTg
+"Z2lk[...]3ZTg"
 
 >>> Account.Cards.VirtualID()
-Z2lk[...]hM2I
+"Z2lk[...]hM2I"
 
 >>> Account.Cards.getDetails(Account.Cards.VirtualID())
 {'digits': '5249[...]', 'expiration': '1973-01-01', 'cvv': '123'}
@@ -139,7 +139,7 @@ Z2lk[...]hM2I
 }
 
 >>> Account.Cards.defaultCardPaiementID()
-src_hk[...]ta
+"src_hk[...]ta"
 
 >>> Account.Cards.block(Account.Cards.PhysicalID())
 200	
@@ -148,23 +148,23 @@ src_hk[...]ta
 200
 
 >>> Account.Cards.getVirtualCardNumber()
-5249[...]
+"5249[...]"
 
 >>> Account.Cards.getVirtualCardExpiration()
-1973-01-01
+"1973-01-01"
 
 >>> Account.Cards.getVirtualCardCVV()
-123
+"123"
 
 #IBAN
 >>> Account.Cards.getBankID()
-Z2lk[...]kwOQ
+"Z2lk[...]kwOQ"
 
 >>> Account.Cards.getIban()
-FR761437[...]36
+"FR761437[...]36"
 
 >>> Account.Cards.getBic()
-SFPMFRP1
+"SFPMFRP1"
 ```
 
 ### Statistiques
