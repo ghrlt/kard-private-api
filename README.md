@@ -1,7 +1,11 @@
 # A private API for Kard bank interaction
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+
+---
 
 I did this by accident, I wanted to do a private api of my Wiz lamp but I haven't succeeded yet. and so, I wanted to look at my bank app..
+
 I'm posting on Github today to show you how easy it is to control a Kard bank account, without much more security than that... 
 
 ## Usage
@@ -134,6 +138,9 @@ Z2lk[...]hM2I
   'providPayID': 'pay_r5h[...]nu'
 }
 
+>>> Account.Cards.defaultCardPaiementID()
+src_hk[...]ta
+
 >>> Account.Cards.block(Account.Cards.PhysicalID())
 200	
 
@@ -159,6 +166,82 @@ FR761437[...]36
 >>> Account.Cards.getBic()
 SFPMFRP1
 ```
+
+### Statistiques
+```python
+>>> Account.Stats.recentTransaction(2) #Default to 20
+[
+  {
+    '__typename': 'CardTransaction', 
+    'id': 'Z2lk[...]I2OA', 
+    'title': 'Www.Aliexpress.Com', 
+    'status': 'SETTLED', 
+    'visibility': 'HIDDEN', 
+    'amount': {'value': -15.38, 'currency': {'symbol': '€'}}, 
+    'category': {'name': 'Shopping', 'color': '#F943B1', 'image': {'url': 'https://app.kard.eu/rails/active_storage/blobs/eyJfcmFp[...]2d498981/Shopping.png'}},
+    'processedAt': '1970-01-01T00:00:01Z'
+  },
+  {
+    '__typename': 'InternalTransferTransaction',
+    'id': 'Z2lk[...]ZhMQ', 
+    'title': 'Argent économisé', 
+    'status': 'SETTLED', 
+    'visibility': 'HIDDEN', 
+    'amount': {'value': -10.0, 'currency': {'symbol': '€'}}, 
+    'category': {'name': 'Internal transfer', 'color': '#6FFB9F', 'image': {'url': 'https://app.kard.eu/rails/active_storage/blobs/eyJfcmFp[...]24259d53/Ico-Top%20Up.png'}}, 
+    'processedAt': '1970-01-01T00:00:00Z',
+    'moneyAccount': {'name': 'Économies', 'color': '#64FF33', 'emoji': {'name': 'moneybag', 'unicode': '💰'}}
+  }
+]
+
+>>> Account.Stats.totalTransactions()
+92
+
+>>> Account.Stats.week()
+{
+  'Shopping': {'amount': -15.38, 'percent': 100.0, 'nbTransa': 1},
+  'total': 15.38
+}
+
+>>> Account.Stats.month()
+{
+  'Shopping': {'amount': -15.38, 'percent': 100.0, 'nbTransa': 1},
+  'total': 15.38
+}
+
+>>> Account.Stats.year()
+{
+  'Shopping': {'amount': -156.93, 'percent': 73.47, 'nbTransa': 12},
+  'Groceries': {'amount': -36.98, 'percent': 17.31, 'nbTransa': 2},
+  'Entertainment': {'amount': -19.68, 'percent': 9.21, 'nbTransa': 4},
+  'total': 213.59
+}
+
+>>> Account.Stats.all()
+{
+  'Shopping': {'amount': -500.13, 'percent': 82.12, 'nbTransa': 57},
+  'Groceries': {'amount': -80.4, 'percent': 13.2, 'nbTransa': 7},
+  'Entertainment': {'amount': -27.51, 'percent': 4.52, 'nbTransa': 6},
+  'Bills': {'amount': -0.99, 'percent': 0.16, 'nbTransa': 1},
+  'total': 609.03
+}
+```
+### Money related
+```python
+>>> Account.Money.balance()
+9.62
+
+#You need to put, cvv amount and paiement card ID
+>>> Account.Money.addFromSaved("123", "10", Account.Cards.defaultCardPaiementID())
+"You now need to confirm 3D Secure code here: https://api2.checkout.com/v2/3ds/acs/sid_toiw6t7[...]m5rm
+
+>>> Account.Money.send()
+
+```
+
+
+
+
 
 
 ## License
