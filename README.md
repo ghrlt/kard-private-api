@@ -14,6 +14,7 @@ I'm posting on Github today to show you how easy it is to control a Kard bank ac
 * [Cards](#account-cards)
 
 
+> Note: All the "[...]" are there only to hide my personal information. The informations returned by the API are not censored.
 
 ### Account details
 ```python
@@ -63,7 +64,7 @@ Z2lkOi8[...]TI5ZGNmMDc4YTU
 2
 
 >>> Account.Friends.firstNames()
-['Antonin', 'Fabien']
+['A[...]n', 'F[...]n']
 ```
 
 ### Account Subscription plan
