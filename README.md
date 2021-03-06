@@ -233,7 +233,7 @@ None
 
 #You need to put, cvv amount and paiement card ID
 >>> Account.Money.addFromSaved("123", "10", Account.Cards.defaultCardPaiementID())
-"You now need to confirm 3D Secure code here: https://api2.checkout.com/v2/3ds/acs/sid_toiw6t7[...]m5rm
+"You now need to confirm 3D Secure code here: https://api2.checkout.com/v2/3ds/acs/sid_toiw6t7[...]m5rm"
 
 >>> Account.Money.send()
 
