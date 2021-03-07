@@ -9,6 +9,10 @@ I did this by accident, I wanted to do a private api of my Wiz lamp but I haven'
 I'm posting on Github today to show you how easy it is to control a Kard bank account, without much more security than that... 
 
 ## Usage
+* [Installation](#install)
+	* [License](#license)
+	* [Support me!](#support-me)
+
 * [Login](#login)
 * [Details](#account-details)
 	* [Set details](#account-set-details)
@@ -17,6 +21,10 @@ I'm posting on Github today to show you how easy it is to control a Kard bank ac
 * [Subscription](#account-subscription-plan)
 * [Cards](#account-cards)
 
+
+
+## Installation
+	TODO
 
 
 > Note: All the "[...]" are there only to hide my personal information. The informations returned by the API are not censored.
