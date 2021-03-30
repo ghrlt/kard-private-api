@@ -1,6 +1,5 @@
-import requests, json, time, datetime, base64
-import webbrowser
-
+import json, time, datetime, base64, webbrowser
+from requests import request
 
 def readF(file):
 	with open(f'{file}.json', 'r') as f:
@@ -77,31 +76,42 @@ USERAGENT = "Gaetan/911"
 
 NUM = readF('config')['login']['phone']
 CODE = readF('config')['login']['code']
+HEADERS_NONAUTH = {
+    'content-type': "application/json",
+    'content-length': "666",
+    'host': "api.kard.eu",
+    'connection': "Keep-Alive",
+    'accept-encoding': "gzip",
+    'user-agent': USERAGENT,
+    'vendoridentifier': VENDORIDENTIFIER,
+    'accept-language': "en"
+}
+HEADERS = {
+    "content-type": "application/json",
+    "content-length": "666",
+    "host": "api.kard.eu",
+    "connection": "Keep-Alive",
+    "accept-encoding": "gzip",
+    'user-agent': USERAGENT,
+    'vendoridentifier': VENDORIDENTIFIER,
+    "authorization": "Bearer " + TOKEN,
+    "accept-language": "en"
+}
+API_URL = "https://api.kard.eu/graphql"
+
 
 #Login
 def login(num=NUM, code=CODE):
 
-	num=num #Like this "06 00 00 00 00"
-	code=code
-
-
-	#Request OTP
-	url = "https://api.kard.eu/graphql"
-
-	payload = "{\"query\":\"mutation androidInitSession($createUser: Boolean, $phoneNumber: PhoneNumber!, $platform: DevicePlatform, $vendorIdentifier: String!) { initSession(input: {createUser: $createUser, phoneNumber: $phoneNumber, platform: $platform, vendorIdentifier: $vendorIdentifier}) { challenge expiresAt errors { path message } }}\",\"variables\":{\"platform\":\"ANDROID\",\"createUser\":true,\"phoneNumber\":\""+num+"\",\"vendorIdentifier\":\""+VENDORIDENTIFIER+"\"},\"extensions\":{}}"
-	headers = {
-	    'content-type': "application/json",
-	    'content-length': "492",
-	    'host': "api.kard.eu",
-	    'connection': "Keep-Alive",
-	    'accept-encoding': "gzip",
-	    'user-agent': USERAGENT,
-	    'vendoridentifier': VENDORIDENTIFIER,
-	    'accept-language': "en"
+	payload = {
+	    "query": "mutation androidInitSession($createUser: Boolean, $phoneNumber: PhoneNumber!, $platform: DevicePlatform, $vendorIdentifier: String!) { initSession(input: {createUser: $createUser, phoneNumber: $phoneNumber, platform: $platform, vendorIdentifier: $vendorIdentifier}) { challenge expiresAt errors { path message } }}",
+	    "variables": {"platform": "ANDROID", "createUser": True, "phoneNumber": num, "vendorIdentifier": VENDORIDENTIFIER},
+	    "extensions": {}
 	}
 
-	response = requests.request("POST", url, data=payload, headers=headers)
+	response = request("POST", API_URL, json=payload, headers=HEADERS_NONAUTH)
 	data = json.loads(response.text)
+	
 	try:
 		err = data['errors']['extensions']['problems']['explanation']
 		raise Exception(err)
@@ -109,23 +119,14 @@ def login(num=NUM, code=CODE):
 		if data['data']['initSession']['challenge'] == "OTP":
 			otp = input("You need to confirm OTP code sent to " + num + " : ")
 
-			payload = "{'query':'mutation androidVerifyOTP($authenticationProvider: AuthenticationProviderInput, $code: String!, $phoneNumber: PhoneNumber!, $vendorIdentifier: String!) { verifyOtp(input: {authenticationProvider: $authenticationProvider, code: $code, phoneNumber: $phoneNumber, vendorIdentifier: $vendorIdentifier}) { challenge accessToken refreshToken errors { path message } }}','variables':{'phoneNumber':'"+num+"','vendorIdentifier':'"+VENDORIDENTIFIER+"','code':''"+otp+"''},'extensions':{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "517",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'accept-language': "en"
+			payload = {
+			    "query": "mutation androidVerifyOTP($authenticationProvider: AuthenticationProviderInput, $code: String!, $phoneNumber: PhoneNumber!, $vendorIdentifier: String!) { verifyOtp(input: {authenticationProvider: $authenticationProvider, code: $code, phoneNumber: $phoneNumber, vendorIdentifier: $vendorIdentifier}) { challenge accessToken refreshToken errors { path message } }}",
+			    "variables": {"phoneNumber": num,"vendorIdentifier": VENDORIDENTIFIER,"code": otp},
+			    "extensions": {}
 			}
 
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS_NONAUTH)
 			data = json.loads(response.text)
-
-		#else:
-		#	raise Exception(data['data']['verifyOtp']['errors']['message'])	
 
 		elif data['data']['initSession']['challenge'] == "PASSCODE":
 			pass
@@ -133,28 +134,20 @@ def login(num=NUM, code=CODE):
 			print('˄˄˄')
 			print(data)
 			print('˅˅˅')
-			raise Exception('Never saw this. Open an issue with all text before please.')
+			raise Exception('Never saw this. Open an issue with any previous text please.')
 
 		try:
 			passcode = data['data']['verifyOtp']['challenge']
 		except: 
 			pass
 
-		global TOKEN
-		payload = "{\"query\":\"mutation androidSignIn($authenticationProvider: AuthenticationProviderInput,$passcode: String!, $phoneNumber: PhoneNumber!, $vendorIdentifier: String!) { signIn(input: {authenticationProvider: $authenticationProvider,passcode: $passcode, phoneNumber: $phoneNumber, vendorIdentifier: $vendorIdentifier}) { accessToken refreshToken errors { path message } }}\",\"variables\":{\"passcode\":\""+code+"\",\"phoneNumber\":\""+num+"\",\"vendorIdentifier\":\""+VENDORIDENTIFIER+"\"},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "513",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
+		payload = {
+		    "query": "mutation androidSignIn($authenticationProvider: AuthenticationProviderInput,$passcode: String!, $phoneNumber: PhoneNumber!, $vendorIdentifier: String!) { signIn(input: {authenticationProvider: $authenticationProvider,passcode: $passcode, phoneNumber: $phoneNumber, vendorIdentifier: $vendorIdentifier}) { accessToken refreshToken errors { path message } }}",
+		    "variables": {"passcode": code,"phoneNumber": num,"vendorIdentifier": VENDORIDENTIFIER},
+		    "extensions": {}
+		}
 
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		access = data['data']['signIn']['accessToken']
@@ -179,22 +172,9 @@ class Account:
 	#get account creation date
 	def creationDate():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { createdAt }","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { createdAt }","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "126",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['createdAt'] #Formatting?
@@ -202,22 +182,9 @@ class Account:
 	#get account id
 	def id():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { id }","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { id }","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "119",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['id']
@@ -225,22 +192,9 @@ class Account:
 	#get account avatar
 	def avatar():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { avatar { url }}}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { avatar { url }}}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "141",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['avatar']['url']
@@ -248,22 +202,9 @@ class Account:
 	#get account firstname
 	def firstname():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { firstName }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { firstName }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "137",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['firstName']
@@ -271,22 +212,9 @@ class Account:
 	#get account lastname
 	def lastname():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { lastName }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { lastName }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "136",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['lastName']
@@ -294,22 +222,9 @@ class Account:
 	#get account username
 	def username():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { username }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { username }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "136",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['username']
@@ -317,22 +232,9 @@ class Account:
 	#get account age
 	def age():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { age }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { age }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "131",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['age']
@@ -340,22 +242,9 @@ class Account:
 	#get account birthdate
 	def birthDate():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { birthday }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { birthday }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "135",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['birthday']
@@ -363,22 +252,9 @@ class Account:
 	#get account birthplace
 	def birthPlace():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { placeOfBirth }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { placeOfBirth }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "2920",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['placeOfBirth']
@@ -386,22 +262,9 @@ class Account:
 	#get account address
 	def address():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { shippingAddress { fullAddress } }}","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { shippingAddress { fullAddress } }}","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "159",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['profile']['shippingAddress']['fullAddress']
@@ -409,22 +272,9 @@ class Account:
 	#get account email
 	def email():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { email }","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { email }","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "122",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['email']
@@ -432,22 +282,9 @@ class Account:
 	#get account phone number
 	def phone():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { phoneNumber }","variables":{},"extensions":{}}
 
-		payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { phoneNumber }","variables":{},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "128",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['phoneNumber']
@@ -455,22 +292,13 @@ class Account:
 	#get account type
 	def type():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {
+		    "query": "query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { type }",
+		    "variables": {},
+		    "extensions": {}
+		}
 
-		payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "2920",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['type']
@@ -479,66 +307,27 @@ class Account:
 	#change account username
 	def setUsername(new): #From their side, there's a bug who may make it not working
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"mutation androidUpdateUsername($username: Username!) { updateUsername(input: {username: $username}) { errors { message path } }}","variables":{"username":"'+new+'"},"extensions":{}}
 
-		payload = '{"query":"mutation androidUpdateUsername($username: Username!) { updateUsername(input: {username: $username}) { errors { message path } }}","variables":{"username":"'+new+'"},"extensions":{}}'
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "189",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		return response.status_code
 
 	#change account email
 	def setEmail(new): #Working, but need a manual confirmation by mail.
 		email = new
-		url = "https://api.kard.eu/graphql"
-
 		payload = "{\"query\":\"mutation androidUpdateEmail($email: Email!) { updateEmail(input: {email: $email}) { errors { message path } }}\",\"variables\":{\"email\":\""+email+"\"},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "184",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
 
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		return response.status_code
 
-	#change account phone number
+	#change account phone
 	def setPhone(new, code=CODE): #I dunno what API support, +33 6 00 00 00 00 format recommanded
 
 		phone=new
 		code=code
-		url = "https://api.kard.eu/graphql"
-
 		payload = "{\"query\":\"mutation androidChangePhoneNumber($newPhoneNumber: PhoneNumber!, $passcode: Passcode!) { changePhoneNumber(input: {newPhoneNumber: $newPhoneNumber, passcode: $passcode}) { errors { message path } }}\",\"variables\":{\"passcode\":\""+code+"\",\"newPhoneNumber\":\""+phone+"\"},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "295",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
 
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		return response.status_code
 
 
@@ -548,44 +337,18 @@ class Account:
 	class Friends:
 		#get number of friends
 		def howMany():
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename id } }}}","variables":{},"extensions":{}}
 
-			payload = "{\"query\":\"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}\",\"variables\":{},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "282",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return len(data['data']['me']['friendships'])
 
 		#get friends firstname
 		def firstNames():
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
 
-			payload = "{\"query\":\"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}\",\"variables\":{},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "282",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			friends = {}
@@ -600,22 +363,9 @@ class Account:
 
 		#get friends lastname
 		def lastNames():
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
 
-			payload = "{\"query\":\"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}\",\"variables\":{},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "282",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			friends = {}
@@ -630,34 +380,20 @@ class Account:
 
 		#get friends firstname with bank account
 		def withBankAccounts():
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
 
-			payload = "{\"query\":\"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}\",\"variables\":{},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "282",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1NjRmYzU3Ni1jNTRiLTRiMDktOGQ0Ni1lZGQ5ZTcyNzRmZTQiLCJzdWIiOiI5YWM4N2U4Ny1iMjMxLTQ0ZjAtOTk4MC00ODFhODliOGI0NGMiLCJzY3AiOiJ1c2VyIiwiYXVkIjpudWxsLCJpYXQiOjE2MTQ1NTkxMjAsImV4cCI6MTYxNTE2MzkyMH0.cpQLZxONgNp2pyrLUMSGOvmzAIf6p6p38mevsDrUJvw",
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
-
 			friends = {}
 			for friend in data['data']['me']['friendships']:
 				friends[friend['user']['username']] = {"firstname": friend['user']['firstName'], "lastname": friend['user']['lastName'], "bankaccount": friend['user']['hasBankAccount']}
 
-			friends = []
+			Friends = []
 			for friend in friends:
 				if friends[friend]['bankaccount']:
-					friends.append(friends[friend])
+					Friends.append(friends[friend])
 
-			return friends
+			return Friends
 
 
 	'''
@@ -667,22 +403,9 @@ class Account:
 		#get account subscription status
 		def status():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id status } }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id status } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "148",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['status']
@@ -690,22 +413,9 @@ class Account:
 		#get account subscription next billing date
 		def nextBillingDate():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id nextBilling { date } } }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id nextBilling { date } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "157",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['nextBilling']['date']
@@ -713,22 +423,9 @@ class Account:
 		#get account subscription next billing price
 		def nextBillingPrice():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { ... Me_SubscriptionParts } }\n\nfragment Me_SubscriptionParts on Subscription { id nextBilling { amount { value currency { isoCode name symbol symbolFirst } } } plan { id price { value } }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { ... Me_SubscriptionParts } }\n\nfragment Me_SubscriptionParts on Subscription { id nextBilling { amount { value currency { isoCode name symbol symbolFirst } } } plan { id price { value } }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "319",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['nextBilling']['amount']
@@ -736,22 +433,9 @@ class Account:
 		#get account subscription price
 		def price():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { price { value }} } }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { price { value }} } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "160",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['plan']['price']['value']
@@ -759,22 +443,9 @@ class Account:
 		#get account subscription name
 		def name():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { name } } }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { subscription { id plan { name } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "150",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['subscription']['plan']['name']
@@ -787,22 +458,9 @@ class Account:
 		#get parent id
 		def id():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { id }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { id }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "144",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['id']
@@ -810,22 +468,9 @@ class Account:
 		#get parent firstname
 		def firstname():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { firstName }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { firstName }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "151",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['firstName']
@@ -833,22 +478,9 @@ class Account:
 		#get parent lastname
 		def lastname():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { lastName }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { lastName }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "150",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['lastName']
@@ -856,22 +488,9 @@ class Account:
 		#get parent username
 		def username():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { username }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { username }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "150",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['username']
@@ -879,22 +498,9 @@ class Account:
 		#get parent email
 		def email():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { email }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { email }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "147",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['email']
@@ -902,22 +508,9 @@ class Account:
 		#get parent phone number
 		def phone():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { phoneNumber }}}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { parent { status user { phoneNumber }}}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "153",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['parent']['user']['phoneNumber']
@@ -930,60 +523,34 @@ class Account:
 		#get cards
 		def getAll():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts }}}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts }}}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "152",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['cards']['nodes']
 
 		#get card details
-		def getDetails(id): #Not allowed while trying to get physical card details
-			id=id
+		def getDetails(cardId): #Not allowed while trying to get physical card details
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidUrlToGetPan($cardId: ID!) { urlToGetPan(cardId: $cardId) { url }}","variables": {"cardId": cardId},"extensions":{}}
 
-			payload = "{\"query\":\"query androidUrlToGetPan($cardId: ID!) { urlToGetPan(cardId: $cardId) { url }}\",\"variables\":{\"cardId\":\""+id+"\"},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "210",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
+
 			url = data['data']['urlToGetPan']['url']
-			
+
 			headers = {
 			    'host': "virtualcard.bankable.cards",
 			    'connection': "Keep-Alive",
 			    'accept-encoding': "gzip",
 			    'user-agent': USERAGENT,
 			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
+			    'authorization': "Bearer "+ TOKEN,
 			    'accept-language': "en"
-			    }
+			}
 
-			response = requests.request("GET", url, headers=headers)
+			response = request("GET", url, headers=headers)			
 			data = json.loads(response.text)
 
 			num = data['card_pan']
@@ -995,33 +562,21 @@ class Account:
 		#get saved card for topup
 		def getTopupCard():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListTopupCard { me { topupCards { ... Topup_TopupCardParts } }}\n\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidListTopupCard { me { topupCards { ... Topup_TopupCardParts } }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "240",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
+			print(data)
 
-			cards = {}
+			cards = []
 			for card in data['data']['me']['topupCards']:
-				cards = {'id':card['id'], 'name': card['name'], 'expiration': card['expirationDate'], 'last4Digits': card['last4'], 'isDefault': card['default'], 'providSrcID': card['providerSourceId'], 'providPayID': card['providerPaymentId']}
+				cards.append({'id':card['id'], 'name': card['name'], 'expiration': card['expirationDate'], 'last4Digits': card['last4'], 'isDefault': card['default'], 'providSrcID': card['providerSourceId'], 'providPayID': card['providerPaymentId']})
 
 			return cards 
 
 		#get default card for paiement ID
 		def defaultCardPaiementID():
-			card = Account.Cards.getTopupCard()
+			card = Account.Cards.getTopupCard()[0]
 
 			return card['providSrcID']
 
@@ -1030,43 +585,17 @@ class Account:
 		#unblock card by ID
 		def unblock(id):
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidUpdateCard($input: UpdateCardInput!) { updateCard(input: $input) { card { ... Card_CardParts } errors { path message} }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{"input":{"cardId": id,"attributes":{"blocked": "false"}}},"extensions":{}}
 
-			payload = '{"query":"mutation androidUpdateCard($input: UpdateCardInput!) { updateCard(input: $input) { card { ... Card_CardParts } errors { path message} }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{"input":{"cardId":""+id+"","attributes":{"blocked":false}}},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "468",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			return response.status_code
 
 		#block card by ID
 		def block(id):
 			id=id
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidUpdateCard($input: UpdateCardInput!) { updateCard(input: $input) { card { ... Card_CardParts } errors { path message} }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{"input":{"cardId": id,"attributes":{"blocked": "true"}}},"extensions":{}}
 
-			payload = '{"query":"mutation androidUpdateCard($input: UpdateCardInput!) { updateCard(input: $input) { card { ... Card_CardParts } errors { path message} }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}","variables":{"input":{"cardId":""+id+"","attributes":{"blocked":true}}},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "467",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			return response.status_code
 
 
@@ -1074,23 +603,9 @@ class Account:
 		#get physical card ID
 		def physicalID():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id }\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}
 
-
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id }\\n\\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "212",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for card in data['data']['me']['cards']['nodes']:
@@ -1104,23 +619,9 @@ class Account:
 		#get virtual card ID
 		def VirtualID():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id }\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}
 
-
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id }\\n\\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "212",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for card in data['data']['me']['cards']['nodes']:
@@ -1132,24 +633,9 @@ class Account:
 		#get virtual card number
 		def getVirtualCardNumber():
 
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id }\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}
 
-			url = "https://api.kard.eu/graphql"
-
-
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id }\\n\\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "212",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for card in data['data']['me']['cards']['nodes']:
@@ -1163,23 +649,9 @@ class Account:
 		#get virtual card expiration date
 		def getVirtualCardExpiration():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id }\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}
 
-
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id }\\n\\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "212",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for card in data['data']['me']['cards']['nodes']:
@@ -1193,23 +665,9 @@ class Account:
 		#get virtual card cvv
 		def getVirtualCardCVV():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id }\n\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}
 
-
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id }\\n\\nfragment Me_MeParts on Me { cards { nodes { ... Card_CardParts } } }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "2920",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for card in data['data']['me']['cards']['nodes']:
@@ -1225,22 +683,9 @@ class Account:
 		#get bank account id
 		def getBankID():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { bankAccount { id }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_MeParts on Me { bankAccount { id }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "136",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['bankAccount']['id']
@@ -1248,22 +693,9 @@ class Account:
 		#get iban
 		def getIban():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { bankAccount { iban }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_MeParts on Me { bankAccount { iban }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "138",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['bankAccount']['iban']
@@ -1271,22 +703,9 @@ class Account:
 		#get bic
 		def getBic():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { bankAccount { bic }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_MeParts on Me { bankAccount { bic }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "137",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['bankAccount']['bic']
@@ -1301,22 +720,9 @@ class Account:
 		def recentTransactions(nb=20): #Default last 20 transactions
 
 			howmany = nb
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactions($first: Int, $after: String) { me { typedTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title status visibility amount { value currency { symbol } } category { name color image { url } } processedAt ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } typedFriendsTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title category { name image { url } } processedAt user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } }}\n\nfragment Vault_VaultMiniParts on Vault { name color emoji { name unicode }}","variables":{"numberOfComments":5,"first": howmany},"extensions":{}}
 
-			payload = '{"query":"query androidTransactions($first: Int, $after: String) { me { typedTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title status visibility amount { value currency { symbol } } category { name color image { url } } processedAt ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } typedFriendsTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title category { name image { url } } processedAt user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } }}\\n\\nfragment Vault_VaultMiniParts on Vault { name color emoji { name unicode }}","variables":{"numberOfComments":5,"first":'+howmany+'},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "1258",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 			recent = data['data']['me']['typedTransactions']['nodes']
 
@@ -1328,22 +734,9 @@ class Account:
 		#get total number of transactions
 		def totalTransactions():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { cardTransactionsCount }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_MeParts on Me { cardTransactionsCount }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "140",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['cardTransactionsCount']
@@ -1354,24 +747,10 @@ class Account:
 			limit, now = getLastWeek()
 			user = Account.id()
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId": user,"to": now,"from": limit},"extensions":{}}
 
-			payload = '{"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":"'+user+'","to":"'+now+'","from":"'+limit+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "376",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
-			print(data)
 			stats = {}
 			total = 0
 			for category in data['data']['transactionsByCategoryOverview']:
@@ -1388,22 +767,9 @@ class Account:
 			limit, now = getLastMonth()
 			user = Account.id()
 			
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":user,"to":now,"from":limit},"extensions":{}}
 
-			payload = '{"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":"'+user+'","to":"'+now+'","from":"'+limit+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "376",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			stats = {}
@@ -1422,22 +788,9 @@ class Account:
 			limit, now = getLastYear()
 			user = Account.id()
 			
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":user,"to":now,"from":limit},"extensions":{}}
 
-			payload = '{"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":"'+user+'","to":"'+now+'","from":"'+limit+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "376",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			stats = {}
@@ -1456,22 +809,9 @@ class Account:
 			limit, now = getTotal()
 			user = Account.id()
 			
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":user,"to":now,"from":limit},"extensions":{}}
 
-			payload = '{"query":"query androidTransactionsByCategoryOverview($userId: ID!, $from: ISO8601DateStrict!, $to: ISO8601DateStrict!) { transactionsByCategoryOverview(userId: $userId, from: $from,to: $to) { category { id name color image { url } } amount { value currency { symbol } } count percentage }}","variables":{"userId":"'+user+'","to":"'+now+'","from":"'+limit+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "376",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			stats = {}
@@ -1493,22 +833,9 @@ class Account:
 		#get balance
 		def balance():
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { bankAccount { balance { value } }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Me_MeParts on Me { bankAccount { balance { value } }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "151",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['bankAccount']['balance']['value']
@@ -1522,34 +849,17 @@ class Account:
 						hint: https://pypi.org/project/asms/ https://stackoverflow.com/a/39887459/11902707
 								-- Add support to know the result (failed, canceled, success)
 			"""
+			payload = {"query":"mutation androidTopupAccount($paymentSource: PaymentSource!, $amount: AmountInput!, $cvv: Cvv!, $childId: ID, $recipientId: ID, $failureUrl: String, $successUrl: String) { topupAccount(input: { paymentSource: $paymentSource, cvv: $cvv, amount: $amount, childId: $childId, recipientId: $recipientId, failureUrl: $failureUrl, successUrl: $successUrl }) { paymentId secureFormUrl errors { message path } }}","variables":{"amount":{"value":amount,"currency":"EUR"},"paymentSource":src,"failureUrl":"https://eu.kard.app/3ds/failure","cvv":cvv,"successUrl":"https://eu.kard.app/3ds/success"},"extensions":{}}
 
-			cvv=cvv
-			amount=amount
-			src=src
-
-			url = "https://api.kard.eu/graphql"
-
-			payload = "{\"query\":\"mutation androidTopupAccount($paymentSource: PaymentSource!, $amount: AmountInput!, $cvv: Cvv!, $childId: ID, $recipientId: ID, $failureUrl: String, $successUrl: String) { topupAccount(input: { paymentSource: $paymentSource, cvv: $cvv, amount: $amount, childId: $childId, recipientId: $recipientId, failureUrl: $failureUrl, successUrl: $successUrl }) { paymentId secureFormUrl errors { message path } }}\",\"variables\":{\"amount\":{\"value\":"+amount+",\"currency\":\"EUR\"},\"paymentSource\":\""+src+"\",\"failureUrl\":\"https://eu.kard.app/3ds/failure\",\"cvv\":\""+cvv+"\",\"successUrl\":\"https://eu.kard.app/3ds/success\"},\"extensions\":{}}"
-			headers = {
-			'content-type': "application/json",
-			'content-length': "640",
-			'host': "api.kard.eu",
-			'connection': "Keep-Alive",
-			'accept-encoding': "gzip",
-			'user-agent': USERAGENT,
-			'vendoridentifier': VENDORIDENTIFIER,
-			'authorization': "Bearer "+TOKEN,
-			'accept-language': "en"
-			}
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			payID = data['data']['topupAccount']['paymentId']
 			url = data['data']['topupAccount']['secureFormUrl']
 
 			webbrowser.open(url, new=2)
-			return "You now need to confirm 3D Secure code here: " + url 
+			print("You now need to confirm 3D Secure code here:", url)
+			return 
 
 		#Send money to friend
 		def send():
@@ -1561,28 +871,15 @@ class Account:
 	'''
 	class Vault:
 		def __init__(self, name=""):
-			self.name=name
+			self.name = name
 		
 		#Get vault ID
 		def id(self):
 			name = self.name
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name }","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "218",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for vault in data["data"]["me"]["vaults"]:
@@ -1592,23 +889,10 @@ class Account:
 		#Get vault Emoji
 		def emoji(self):
 			name = self.name
-
-			url = "https://api.kard.eu/graphql"
 			
-			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name emoji { name unicode }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "218",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
+			payload = {"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name emoji { name unicode }}","variables":{},"extensions":{}}
 
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for vault in data["data"]["me"]["vaults"]:
@@ -1618,23 +902,10 @@ class Account:
 		#Get vault Color
 		def color(self):
 			name = self.name
-
-			url = "https://api.kard.eu/graphql"
 			
-			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name color }","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "218",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
+			payload = {"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name color }","variables":{},"extensions":{}}
 
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for vault in data["data"]["me"]["vaults"]:
@@ -1644,23 +915,10 @@ class Account:
 		#Get vault Goal
 		def goal(self):
 			name = self.name
-
-			url = "https://api.kard.eu/graphql"
 		
-			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name goal { value }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "218",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
+			payload = {"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name goal { value }}","variables":{},"extensions":{}}
 
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for vault in data["data"]["me"]["vaults"]:
@@ -1671,22 +929,9 @@ class Account:
 		def balance(self):
 			name = self.name
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name balance { value }}","variables":{},"extensions":{}}
 
-			payload = '{"query":"query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\nfragment Vault_VaultParts on Vault { id name balance { value }}","variables":{},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "218",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			for vault in data["data"]["me"]["vaults"]:
@@ -1699,22 +944,9 @@ class Account:
 			vault = self.id()
 			amount=str(amount)
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidCreditVault($vaultId: ID!, $amount: AmountInput!) { creditVault(input: {vaultId: $vaultId, amount: $amount}) { errors { message path } }}","variables":{"amount":{"value": amount,"currency":"EUR"},"vaultId": vault},"extensions":{}}
 
-			payload = '{"query":"mutation androidCreditVault($vaultId: ID!, $amount: AmountInput!) { creditVault(input: {vaultId: $vaultId, amount: $amount}) { errors { message path } }}","variables":{"amount":{"value":'+amount+',"currency":"EUR"},"vaultId":"'+vault+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "264",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 			try:
 				err = data['data']['creditVault']['errors'][0]['message']
@@ -1737,22 +969,9 @@ class Account:
 			vault = self.id()
 			color=color
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":vault,"color":color},"extensions":{}}
 
-			payload = '{"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":"'+vault+'","color":"'+color+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "378",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 			
 			try:
@@ -1769,20 +988,7 @@ class Account:
 			emote=emote
 			vault = self.id()
 
-			url = "https://api.kard.eu/graphql"
-
-			payload = '{"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":"'+vault+'","emoji":"'+emote+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "375",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
+			payload = {"query":"mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } }}","variables":{"vaultId":vault,"emoji":emote},"extensions":{}}
 
 			response = requests.request("POST", url, data=payload.encode('utf-8'), headers=headers)
 			data = json.loads(response.text)
@@ -1801,22 +1007,9 @@ class Account:
 			name=self.name
 			goal=str(goal)
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidCreateVault($goal: AmountInput!, $name: Name!) { createVault(input: {goal: $goal, name: $name}) { errors { message path } vault { id } }}","variables":{"goal":{"value":goal,"currency":"EUR"},"name":name},"extensions":{}}
 
-			payload = '{"query":"mutation androidCreateVault($goal: AmountInput!, $name: Name!) { createVault(input: {goal: $goal, name: $name}) { errors { message path } vault { id } }}","variables":{"goal":{"value":'+goal+',"currency":"EUR"},"name":"'+name+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "256",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			return response
 
 		#empty a vault
@@ -1826,24 +1019,12 @@ class Account:
 			if id is None:
 				raise Exception('There is no Vault named "'+ self.name + '" !')
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidCloseVault($vaultId: ID!) { closeVault(input: {vaultId: $vaultId}) { errors { message path } }}","variables":{"vaultId":id},"extensions":{}}
 
-			payload = '{"query":"mutation androidCloseVault($vaultId: ID!) { closeVault(input: {vaultId: $vaultId}) { errors { message path } }}","variables":{"vaultId":"'+id+'"},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "172",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 			return response
+
 
 	'''
 		Transactions data
@@ -1853,50 +1034,23 @@ class Account:
 			self.id = id
 
 		#change transaction name
-		def setName(name):
+		def setName(self, name):
 
 			id = self.id
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidUpdateTransaction($input: UpdateTransactionInput!, $numberOfComments: Int) { updateTransaction(input: $input) { errors { message path } transaction { ... Transaction_TransactionParts } }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\n\nfragment Vault_VaultParts on Vault { id name color emoji { name unicode } goal { value } balance { value }}\n\nfragment Transaction_TransactionParts on Transaction { __typename id title status image { id url } visibility amount { value currency { symbol } } category { name color image { url } } processedAt reactions { totalQuantity emoji { name unicode } paginatedDetails { nodes { quantity emoji { name unicode } user { id firstName lastName username avatar { url } } } } } userReactions { totalQuantity emoji { name unicode } paginatedDetails { nodes { emoji { name unicode } id } } } comments(first: $numberOfComments) { totalCount pageInfo { endCursor hasNextPage } nodes { id comment createdAt user { id firstName lastName avatar { url } } } } user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on CardTransaction { card { ... Card_CardParts } } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultParts } } ... on MoneyLinkTransaction { from message }}","variables":{"numberOfComments":5,"input":{"transactionId": id,"attributes":{"title": name}}},"extensions":{}}
 
-			payload = "{\"query\":\"mutation androidUpdateTransaction($input: UpdateTransactionInput!, $numberOfComments: Int) { updateTransaction(input: $input) { errors { message path } transaction { ... Transaction_TransactionParts } }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Vault_VaultParts on Vault { id name color emoji { name unicode } goal { value } balance { value }}\\n\\nfragment Transaction_TransactionParts on Transaction { __typename id title status image { id url } visibility amount { value currency { symbol } } category { name color image { url } } processedAt reactions { totalQuantity emoji { name unicode } paginatedDetails { nodes { quantity emoji { name unicode } user { id firstName lastName username avatar { url } } } } } userReactions { totalQuantity emoji { name unicode } paginatedDetails { nodes { emoji { name unicode } id } } } comments(first: $numberOfComments) { totalCount pageInfo { endCursor hasNextPage } nodes { id comment createdAt user { id firstName lastName avatar { url } } } } user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on CardTransaction { card { ... Card_CardParts } } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultParts } } ... on MoneyLinkTransaction { from message }}\",\"variables\":{\"numberOfComments\":5,\"input\":{\"transactionId\":\""+id+"\",\"attributes\":{\"title\":\""+name+"\"}}},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "1730",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			return response.status_code
 
 		#add comment on transaction
-		def addComment(comment):
+		def addComment(self, comment):
 			
 			id = self.id
-			comment=comment
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidAddComment($commentableId: ID!, $comment: String!) { addComment(input: { commentableId: $commentableId, comment: $comment }) { errors { message path } comment { id createdAt comment user { id firstName lastName avatar { url } } } }}","variables":{"commentableId": id,"comment": comment},"extensions":{}}
 
-			payload = "{\"query\":\"mutation androidAddComment($commentableId: ID!, $comment: String!) { addComment(input: { commentableId: $commentableId, comment: $comment }) { errors { message path } comment { id createdAt comment user { id firstName lastName avatar { url } } } }}\",\"variables\":{\"commentableId\":\""+id+"\",\"comment\":\""+comment+"\"},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "416",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			if response.status_code == 200:
 				return response.status_code
 			else:
@@ -1904,25 +1058,12 @@ class Account:
 				raise Exception('Response status code invalid: '+ str(response.status_code))
 
 		#del comment on transaction
-		def delComment():
+		def delComment(self):
 			id = self.id
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"mutation androidDeleteComment($commentId: ID!) { deleteComment(input: { commentId: $commentId}) { errors { message path } }}","variables":{"commentId":id},"extensions":{}}
 
-			payload = "{\"query\":\"mutation androidDeleteComment($commentId: ID!) { deleteComment(input: { commentId: $commentId}) { errors { message path } }}\",\"variables\":{\"commentId\":\""+id+"\"},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "280",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			if response.status_code == 200:
 				return response.status_code
 			else:
@@ -1931,92 +1072,52 @@ class Account:
 
 
 		#get last transaction
-		def last_get():
+		def last_get(self):
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransactions($first: Int, $after: String) { me { bankAccount { balance { value } } typedTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title status visibility amount { value currency { symbol } } category { name color image { url } } processedAt ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } typedFriendsTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title category { name image { url } } processedAt user { id firstName lastName username avatar { url } }","variables":{"numberOfComments":5,"first":20},"extensions":{}}
 
-			payload = '{"query":"query androidTransactions($first: Int, $after: String) { me { bankAccount { balance { value } } typedTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title status visibility amount { value currency { symbol } } category { name color image { url } } processedAt ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } } } typedFriendsTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title category { name image { url } } processedAt user { id firstName lastName username avatar { url } }","variables":{"numberOfComments":5,"first":20},"extensions":{}}'
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "1290",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['me']['typedTransactions']['nodes'][0]
 
 		#get last transaction id
-		def last_getID():
+		def last_getID(self):
 
 			data = last_get()
 			return data['id']
 
 
 		#get number of comment on transaction
-		def getNumberOfComments():
+		def getNumberOfComments(self):
 			id = self.id
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransaction($id: ID!, $numberOfComments: Int) { transaction(transactionId: $id) { ... Transaction_TransactionParts }}\n\nfragment Transaction_TransactionParts on Transaction {comments(first: $numberOfComments) { totalCount }}","variables":{"numberOfComments":5,"id":id},"extensions":{}}
 
-			payload = "{\"query\":\"query androidTransaction($id: ID!, $numberOfComments: Int) { transaction(transactionId: $id) { ... Transaction_TransactionParts }}\\n\\nfragment Transaction_TransactionParts on Transaction {comments(first: $numberOfComments) { totalCount }}\",\"variables\":{\"numberOfComments\":5,\"id\":\""+id+"\"},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "1606",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['transaction']['comments']['totalCount']
 
 		#get last transaction comments
-		def last_getComments():
+		def last_getComments(self):
 			id = last_getID()
 
-			url = "https://api.kard.eu/graphql"
+			payload = {"query":"query androidTransaction($id: ID!) { transaction(transactionId: $id) { ... Transaction_TransactionParts }}\n\nfragment Transaction_TransactionParts on Transaction { comments { nodes { id comment createdAt user { id firstName lastName avatar { url }}}}}", "variables": {"numberOfComments": 5, "id":id}, "extensions": {}}
 
-			payload = '{"query":"query androidTransaction($id: ID!) { transaction(transactionId: $id) { ... Transaction_TransactionParts }}\n\nfragment Transaction_TransactionParts on Transaction { comments { nodes { id comment createdAt user { id firstName lastName avatar { url }}}}}", "variables": {"numberOfComments": 5, "id":"'+id+'"}, "extensions": {}}'
-			#payload = "{\"query\":\"query androidTransaction($id: ID!, $numberOfComments: Int) { transaction(transactionId: $id) { ... Transaction_TransactionParts }}\\n\\nfragment Transaction_TransactionParts on Transaction comments(first: $numberOfComments) { nodes { id comment createdAt user { id firstName lastName avatar { url } } } } user { id firstName lastName username avatar { url } }}\",\"variables\":{\"numberOfComments\":5,\"id\":\""+id+"\"},\"extensions\":{}}"
-			headers = {
-			    'content-type': "application/json",
-			    'content-length': "1606",
-			    'host': "api.kard.eu",
-			    'connection': "Keep-Alive",
-			    'accept-encoding': "gzip",
-			    'user-agent': USERAGENT,
-			    'vendoridentifier': VENDORIDENTIFIER,
-			    'authorization': "Bearer "+TOKEN,
-			    'accept-language': "en"
-			    }
-
-			response = requests.request("POST", url, data=payload, headers=headers)
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
 			data = json.loads(response.text)
 
 			return data['data']['transaction']['comments']['nodes']
 
 		#get last transaction last comment
-		def last_getLastComment():
+		def last_getLastComment(self):
 			lastComment = last_getComments()[0]
 
 			return lastComment
 
 		#get last transaction last comment ID
-		def last_getLastCommentID():
+		def last_getLastCommentID(self):
 			comment = last_getLastComment()
 
 			return comment['id']
@@ -2027,22 +1128,9 @@ class Account:
 	#get account mail status (verified or not)
 	def isEmailConfirmed():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\n\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\n\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\n\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\n\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\n\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\n\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}","variables":{},"extensions":{}}
 
-		payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "2920",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['emailConfirmed']
@@ -2055,24 +1143,11 @@ class Account:
 		return 'https://s.kard.eu/'+username+'/'+amount
 
 	#get account referral code
-	def referalCode():
+	def referralCode():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\n\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\n\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\n\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\n\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\n\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\n\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}","variables":{},"extensions":{}}
 
-		payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "2920",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['referralCode']
@@ -2080,24 +1155,10 @@ class Account:
 	#get account referral link
 	def referralLink():
 
-		url = "https://api.kard.eu/graphql"
+		payload = {"query":"query androidMe { me { ... Me_MeParts }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\n\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\n\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\n\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\n\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\n\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\n\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}","variables":{},"extensions":{}}
 
-		payload = "{\"query\":\"query androidMe { me { ... Me_MeParts }}\\n\\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked ... on PhysicalCard { atm contactless swipe online design }}\\n\\nfragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\\n\\nfragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value } identityVerification { status url } proofOfAddress { status files { contentType url ... on Image { width height } } }}\\n\\nfragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\\n\\nfragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name price { value } }}\\n\\nfragment Me_TopupRequestParts on TopupRequest { id amount { value currency { symbol isoCode } } reason accepted cancelled declined requester { id firstName lastName avatar { url } }}\\n\\nfragment Me_MeParts on Me { id type profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } email emailConfirmed unconfirmedEmail phoneNumber referralCode referralUrl bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } } card { id } cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } cards { nodes { ... Card_CardParts } } earnings { value currency { symbol isoCode } } onboardingDone pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } parent { status user { id firstName lastName username email phoneNumber claimId hasTopupCard } } children { id status user { id email phoneNumber profile { firstName lastName username avatar {url} birthday } kyc { ... Me_KycParts } cardBeingSetup { ... Card_CardParts } cards { nodes { ... Card_CardParts } } bankAccount { balance { value currency { symbol isoCode } } } incomingRecurringPayment { ... Topup_RecurringParts } savingsAmount { value } } } subscription { ... Me_SubscriptionParts } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } fundsOrigin canOrderCard externalAuthenticationProviders { id type uniqueId } claimId cardTransactionsCount topupRequestsFromChildren { ... Me_TopupRequestParts } topupRequestsToParent { ... Me_TopupRequestParts } savingsAmount { value } createdAt}\",\"variables\":{},\"extensions\":{}}"
-		headers = {
-		    'content-type': "application/json",
-		    'content-length': "2920",
-		    'host': "api.kard.eu",
-		    'connection': "Keep-Alive",
-		    'accept-encoding': "gzip",
-		    'user-agent': USERAGENT,
-		    'vendoridentifier': VENDORIDENTIFIER,
-		    'authorization': "Bearer "+TOKEN,
-		    'accept-language': "en"
-		    }
-
-		response = requests.request("POST", url, data=payload, headers=headers)
+		response = request("POST", API_URL, json=payload, headers=HEADERS)
 		data = json.loads(response.text)
 
 		return data['data']['me']['referralUrl']
-
 
