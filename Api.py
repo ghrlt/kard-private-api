@@ -395,6 +395,82 @@ class Account:
 
 			return Friends
 
+		#get friends ID
+		def ids():
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			friends = []
+			for friend in data['data']['me']['friendships']:
+				friends.append(friend['user']['id'])
+			
+			return friends
+
+		#get a friend ID by firstname
+		def idByFirstname(firstname):
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+			
+			for friend in data['data']['me']['friendships']:
+				if friend['user']['firstName'] == firstname:
+					return friend['user']['id']
+
+		#get a friend ID by username
+		def idByUsername(username):
+			payload = {"query":"query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username } } }}","variables":{},"extensions":{}}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+			
+			for friend in data['data']['me']['friendships']:
+				if friend['user']['username'] == username:
+					return friend['user']['id']
+
+		#remove a friend
+		def removeFriend(friendID):
+			payload = {
+			    "query": "mutation androidCancelFriend($userId: ID!) { cancelFriendship(input: {userId: $userId}) { errors { message path } friendships { status user { id } } }}",
+			    "variables": {"userId": friendID},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response.status_code
+
+		#reject a friend request
+		def rejectFriend(userID):
+			payload = {
+			    "query": "mutation androidRefuseFriendship($userId: ID!) { refuseFriendship(input: {userId: $userId}) { errors { message path } friendships { status user { id } } }}",
+			    "variables": {"userId": userID},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response.status_code
+
+		#accept a friend request
+		def acceptFriend(userID):
+			payload = {
+			    "query": "mutation androidAcceptFriend($userId: ID!) { acceptFriendship(input: {userId: $userId}) { errors { message path } friendships { status user { id } } }}",
+			    "variables": {"userId": userID},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response.status_code
 
 	'''
 		Get informations about subscription plan
@@ -862,8 +938,124 @@ class Account:
 			return 
 
 		#Send money to friend
-		def send():
-			raise Exception('Command not set. I need to get friends in Kard before lol')
+		def send(friendID, amount, reason=""):
+
+			""" internalUsersIds is a list, but handle only first element at the date of 19 April 2021 """
+
+			payload = {
+			    "query": "mutation androidSendMoney($input: SendMoneyInput!) { sendMoney(input: $input) { errors { path message } sending { id amount { value currency { isoCode } } reason owner { id username firstName lastName } } }}",
+			    "variables": {"input": {
+			            "internalUsersIds": [friendID],
+			            "externalUsers": [],
+			            "amount": {
+			                "value": amount,
+			                "currency": "EUR"
+			            },
+			            "reason": reason
+			        }},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			try:
+				error = data['data']['sendMoney']['errors'][0]['message']
+			except:
+				try:
+					error = data['errors'][0]['message']
+				except:
+					return response
+
+			raise Exception(error)
+
+		#Ask money to parent
+		def requestParent(parentID, amount, reason=""):
+			payload = {
+			    "query": "mutation androidAskParentForMoney($amount: AmountInput!, $parentId: ID!, $reason: String) { askParentForMoney(input: {amount: $amount, parentId: $parentId, reason: $reason}) { clientMutationId errors { message path } }}",
+			    "variables": {
+			        "amount": {
+			            "value": amount,
+			            "currency": "EUR"
+			        },
+			        "parentId": parentID,
+			        "reason": reason
+			    },
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response
+
+		#Ask money to a friend
+		def requestFriend(friendID, amount, reason=""):
+			payload = {
+			    "query": "mutation androidRequestMoney($input: RequestMoneyInput!) { requestMoney(input: $input) { errors { path message } request { id amount { value currency { isoCode } } reason paymentLink owner { id username firstName lastName avatar { url } } } }}",
+			    "variables": {"input": {
+			            "internalUsersIds": [friendID],
+			            "externalUsers": [],
+			            "amount": {
+			                "value": amount,
+			                "currency": "EUR"
+			            },
+			            "reason": reason
+			        }},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			return data['data']['requestMoney']['request']['id']
+
+		#Cancel money request
+		def cancelRequest(requestID):
+			""" Cannot cancel a request made to self. Need to reject """
+
+			payload = {
+			    "query": "mutation androidCancelTopupRequest($requestId: ID!) { cancelTopupRequest(input: {requestId: $requestId}) { errors { message path } }}",
+			    "variables": {"requestId": requestID},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			print(response.text) #Error 500 everytime
+			data = json.loads(response.text)
+
+			print(data)
+			return response
+
+		#Reject money request
+		def rejectRequest(requestID):
+			payload = {
+				"query": "mutation androidRejectMoneyRequest($moneyRequestId: ID!) { rejectMoneyRequest(input: {moneyRequestId: $moneyRequestId}) { errors { path message } }}",
+				"variables": {
+				"moneyRequestId": requestID
+				},
+				"extensions": {}
+			}
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response
+
+		#Accept money request
+		def acceptRequest(requestID):
+			payload = {
+			    "query": "mutation androidAcceptMoneyRequest($moneyRequestId: ID!) { acceptMoneyRequest(input: {moneyRequestId: $moneyRequestId}) { errors { path message } }}",
+			    "variables": {"moneyRequestId": requestID},
+			    "extensions": {}
+			}
+
+			response = request("POST", API_URL, json=payload, headers=HEADERS)
+			data = json.loads(response.text)
+
+			print(data)
+			return response
 
 
 	'''
