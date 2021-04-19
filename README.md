@@ -26,20 +26,39 @@ I'm posting on Github today to show you how easy it is to control a Kard bank ac
 
 
 ## Installation
-	TODO
+`git clone https://github.com/ghrlt/kard-private-api`
+
+`cd kard-private-api`
+
+Fill `config.json` with your own phone number and Kard code.
+
+You can then create your `app.py` file and start using the API.
+
+-> Example (Some others are in the [examples directory](https://github.com/ghrlt/kard-private-api/examples)
+```python
+import api as A
+
+#Login first (one-time)
+A.login()
+
+Acc = A.Account
+		
+#Then, use the Api
+print( Acc.Money.balance() )
+```
 
 
 > Note: All the "[...]" are there only to hide my personal information. The informations returned by the API are not censored.
 
 ### Login
 
-To login, you need to get a unique vendorID (identifier), generate a UUID and replace, or not, by ghrlt by android/ios (in config.json)
+To login, you need to get a unique vendorID (identifier). Generate a UUID and replace, or not, ghrlt by android/ios (in config.json)
 then, login: You can either put a phone number and your access code, or use these from config.json
 ```python
 >>> login("06 12 34 56 78", "1234")
 eyJhbGc[...]UIPrUxpZtI
 ```
-First login with a identifier will require you to receive a SMS and confirm the OTP code. Python will ask it to you
+Your first login with a new identifier will require an SMS verification. The API will ask you the code
 Until you change your identifier, you will not need to login
 	
 Some function require your app code, you can either store it in config.json or precize it when you call the function
@@ -313,4 +332,6 @@ This API is to be used for educational purposes only.
 
 
 ## Support me
-<img alt="Support me through bank card" src="https://www.svgrepo.com/show/301678/piggybank-pig.svg" href="https://s.kard.eu/ghrlt/5.0" width="40" height="40"> <img alt="Send me a Discord Nitro" src="https://discord.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" href="https://discord.gg/cQY9hc7XHm" width="40" height="40"> <img alt="Subscribe to Kard" src="https://uploads-ssl.webflow.com/5fc53498e2555190106eb531/5fc5a6996e50deb8447505e4_logo-purple.svg" href="https://kard.eu?r=GAEHER" width="40" height="40">
+<a href="https://s.kard.eu/ghrlt/5.0"><img alt="Support me through bank card" src="https://www.svgrepo.com/show/301678/piggybank-pig.svg" href="https://s.kard.eu/ghrlt/5.0" width="40" height="40"></a>
+<a href="https://discord.gg/cQY9hc7XHm"><img alt="Send me a Discord Nitro" src="https://discord.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" href="https://discord.gg/cQY9hc7XHm" width="40" height="40"></a>
+<a href="https://kard.eu?r=GAEHER"><img alt="Subscribe to Kard" src="https://uploads-ssl.webflow.com/5fc53498e2555190106eb531/5fc5a6996e50deb8447505e4_logo-purple.svg" href="https://kard.eu?r=GAEHER" width="40" height="40"></a>
