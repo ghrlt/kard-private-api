@@ -1,14 +1,10 @@
-# A private API for Kard bank interaction
-
+# Kard Private Api
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+![](https://komarev.com/ghpvc/?username=ghrlt-kard-private-api&color=brightgreen&label=Repository%20views)  
 
----
+Private API for Kard neobank
 
-I did this by accident, I wanted to do a private api of my Wiz lamp but I haven't succeeded yet. and so, I wanted to look at my bank app..
 Made with the help [HTTP Toolkit](https://httptoolkit.tech/) for trafic sniffing <3 It's an awesome tool!
-
-
-I'm posting on Github today to show you how easy it is to control a Kard bank account, without much more security than that... 
 
 ## Usage
 * [Installation](#install)
