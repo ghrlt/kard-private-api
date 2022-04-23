@@ -38,6 +38,7 @@ class Kard:
 		self.bank = KardBankAccount()
 		self.subscription = KardSubscription()
 		self.cashback = KardCashback()
+		self.contacts = KardContacts()
 
 
 class KardLocalSecrets(Kard):
@@ -1182,9 +1183,83 @@ class KardIntercomMessenger(Kard):
 		"""
 
 
+class KardContacts(Kard):
+	def __init__(self):
+		super().__init__()
+
+	@property
+	def complete_data(self):
+		payload = {
+			"query": "query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } contacts { identifier status user { __typename avatar { url } id firstName lastName username hasBankAccount } } }}",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		return r['data']['me']
+
+	@property
+	def with_kard_account(self):
+		contacts = self.complete_data
+		res = []
+		for contact in self.complete_data['contacts']:
+			if contact['status']:
+				res.append(contact)
+
+		return res
+
+	@property
+	def friends(self):
+		payload = {
+			"query": "query androidListFriendships { me { friendships { status user { __typename avatar { url } id firstName lastName username hasBankAccount } } }}",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['me']['friendships']
+
+	def remove_friend(self, friend_id):
+		payload = {
+			"query": "mutation androidCancelFriend($userId: ID!) { cancelFriendship(input: {userId: $userId}) { errors { message path } }}",
+			"variables": {"userId": friend_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		
+		return r.get('errors') or r['data']['cancelFriendship']['errors']
+
+	def send_friend_request(self, friend_id):
+		payload = {
+			"query": "mutation androidRequestFriendship($userId: ID!) { requestFriendship(input: {userId: $userId}) { errors { message path } }}",
+			"variables": {"userId": friend_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		
+		return r['data']['requestFriendship']['errors']
+
+	def reject_friend_request(self, friend_id):
+		payload = {
+			"query": "mutation androidRefuseFriendship($userId: ID!) { refuseFriendship(input: {userId: $userId}) { errors { message path } }}",
+			"variables": {"userId": friend_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		
+		return r.get('errors') or r['data']['refuseFriendship']['errors']
+
+	def accept_friend_request(self, friend_id):
+		payload = {
+			"query": "mutation androidAcceptFriend($userId: ID!) { acceptFriendship(input: {userId: $userId}) { errors { message path } }}",
+			"variables": {"userId": friend_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		
+		return r.get('errors') or r['data']['acceptFriend']['errors']
 
 
 
 k = Kard()
 k.init()
-print( k.cashback.current_offers )
+print( k.contacts.friends )
