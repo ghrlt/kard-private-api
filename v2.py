@@ -568,6 +568,622 @@ class KardCashback(Kard):
 		pass
 
 
+class KardIntercomMessenger(Kard):
+	def __init__(self):
+		super().__init__()
+
+		#todo
+
+		"""
+		METHOD		POST
+		URL 		https://bepnqfe3-android.mobile-messenger.intercom.com/messenger/mobile/open
+		HEADERS
+			accept-encoding: gzip
+			accept-language: fr-
+			authorization: Basic YmVwbnFmZTM...IyMg==
+			connection: Keep-Alive
+			content-length: 211
+			content-type: application/json
+			host: bepnqfe3-android.mobile-messenger.intercom.com
+			idempotency-key: aa8d1370fa7778ad
+			user-agent: okhttp/4.9.0
+			x-intercom-agent: intercom-android-sdk/10.6.0
+			x-intercom-host-app-version: 2022.08
+			x-intercom-supported-languages: ar,bg,bs,ca,cs,da,de,de-form,el,es,et,fi,fr,he,hr,hu,id,it,ja,ko,lt,lv,mn,nb,nl,pl,pt-PT,pt-BR,ro,ru,sl,sr,sv,tr,vi,zh-Hant,zh-Hans
+		JSON
+			{
+				"email": "urmail@mail.com",
+				"hmac": "911e5...0b59ac493",
+				"type": "user",
+				"intercom_id": "6234a6...36a",
+				"user_id": "9a...7-b231-44f0-9980-48...4c"
+			}
+
+
+		# Send 1st msg
+		METHOD		POST
+		URL 		https://bepnqfe3-android.mobile-messenger.intercom.com/messenger/mobile/conversations
+		HEADERS
+			same, but idempotency-key change (each req)
+		JSON
+			{
+			  "app_id": "bepnqfe3",
+			  "bot_intro": "",
+			  "composer_suggestions": "[]",
+			  "hmac": "911e5d...9ac493",
+			  "user": {
+			    "email": "urmail@mail.com",
+			    "type": "user",
+			    "intercom_id": "623...36a",
+			    "user_id": "9a...87-b231-44f0-9980-481a...4c"
+			  },
+			  "blocks": [
+			    {
+			      "text": "J'aimerais avoir les marques suivantes dans mes KarDeals : OVH & Hyper U",
+			      "type": "paragraph"
+			    }
+			  ]
+			}
+
+		RESPONSE
+			{
+			  "id": "41964",
+			  "read": true,
+			  "dismissed": false,
+			  "participants": [
+			    {
+			      "id": "623...36a",
+			      "avatar": {
+			        "initials": "GH",
+			        "color": "ffb3c6",
+			        "image_urls": {}
+			      },
+			      "type": "user",
+			      "name": "Gaëtan Hrlt",
+			      "first_name": "Gaëtan",
+			      "email": "urmail@mail.com"
+			    }
+			  ],
+			  "conversation_parts": [
+			    {
+			      "id": "127...35",
+			      "participant_id": "623...36a",
+			      "participant_is_admin": false,
+			      "body": [
+			        {
+			          "type": "paragraph",
+			          "text": "J'aimerais avoir les marques suivantes dans mes KarDeals : OVH &amp; Hyper U"
+			        }
+			      ],
+			      "is_initial_message": true,
+			      "attachments": [],
+			      "message_style": "chat",
+			      "show_created_at": true,
+			      "created_at": 1650719730,
+			      "summary": "J'aimerais avoir les marques suivantes dans mes KarDeals : OVH & Hyper U",
+			      "delivery_option": "summary",
+			      "reply_type": "text",
+			      "reply_options": [],
+			      "seen_by_admin": "unseen"
+			    }
+			  ],
+			  "user_participated": true,
+			  "group_conversation_participant_ids": [],
+			  "operator_client_conditions": [],
+			  "intercom_link_solution": "live-chat",
+			  "composer_state": {
+			    "visible": true,
+			    "version": 0,
+			    "self_serve_suggestions_enabled": false,
+			    "custom_bot_active": false,
+			    "workflow_active": false
+			  },
+			  "prevent_end_user_replies": false,
+			  "inbound_conversations_disabled": false,
+			  "notification_status": "unknown",
+			  "state": "state_open",
+			  "is_inbound": true,
+			  "config": {
+			    "name": "Kard",
+			    "base_color": "#7800F0",
+			    "audio_enabled": false,
+			    "show_powered_by": false,
+			    "id_code": "bepnqfe3",
+			    "welcome_message": [
+			      {
+			        "type": "paragraph",
+			        "text": "C'est ici que nous répondons à toutes les questions !"
+			      }
+			    ],
+			    "welcome_message_plain_text": "C'est ici que nous répondons à toutes les questions !",
+			    "auto_response": "We'll notify you here and by email when we reply.",
+			    "inbound_messages": true,
+			    "real_time": true,
+			    "is_first_request": false,
+			    "real_time_config": {
+			      "endpoints": [
+			        "https://nexus-websocket-a.intercom.io/pubsub/5-z9A-XlMn9B93o...CY2p"
+			      ],
+			      "presence_heartbeat_interval": 30,
+			      "connection_timeout": 70
+			    },
+			    "locale": "fr",
+			    "metrics_enabled": true,
+			    "background_requests_enabled": true,
+			    "polling_interval": 7889238,
+			    "no_real_time_throttle": 60,
+			    "user_update_dup_cache_max_age": 600,
+			    "local_rate_limit_period": 60,
+			    "local_rate_limit": 100,
+			    "new_session_threshold": 20,
+			    "soft_reset_timeout": 1,
+			    "help_center_url": "https://intercom.help/kardeu",
+			    "help_center_urls": [
+			      "https://intercom.help/kardeu",
+			      "https://aide.kard.eu"
+			    ],
+			    "help_center_base_color": "#7800F0",
+			    "help_center_locale": "fr",
+			    "features": [],
+			    "secondary_color": "#7800F0",
+			    "primary_color_render_dark_text": false,
+			    "secondary_color_render_dark_text": false,
+			    "help_center_color_render_dark_text": false,
+			    "team_intro": "C'est ici que nous répondons à toutes les questions !",
+			    "team_greeting": "Hello Gaëtan 👋",
+			    "launcher_bottom_padding": 16,
+			    "launcher_alignment": "right",
+			    "identity_verification_enabled": true,
+			    "user_conversation_attachments_enabled": true,
+			    "user_conversation_gifs_enabled": true,
+			    "access_to_teammate_enabled": true,
+			    "help_center_require_search": false,
+			    "upload_size_limit": 41943040,
+			    "prevent_multiple_inbound_conversations_enabled": true
+			  },
+			  "user": {
+			    "type": "user",
+			    "intercom_id": "623...36a",
+			    "encrypted_user_id": "RXpzaHE0...dz09--34318f3...fb497",
+			    "email": "gaetan.hrlt@gmail.com",
+			    "user_id": "9a...87-b231-44f0-9980-481...4c"
+			  },
+			  "has_conversations": true
+			}
+
+
+		# Receive response
+		METHOD		POST
+		URL 		https://bepnqfe3-android.mobile-messenger.intercom.com/messenger/mobile/users
+		HEADERS
+			same
+		JSON
+			{
+			  "user_attributes": {},
+			  "hmac": "911e...9ac493",
+			  "new_session": true,
+			  "user": {
+			    "email": "urmail@mail.com",
+			    "type": "user",
+			    "intercom_id": "623...36a",
+			    "user_id": "9a...87-b231-44f0-9980-48...4c"
+			  },
+			  "sent_from_background": false,
+			  "carousel_visible": false,
+			  "device_data": {
+			    "browser": "Intercom-Android-SDK",
+			    "platform": "PULP 4G",
+			    "language": "français",
+			    "application_id": "eu.kard.android",
+			    "application": "Kard",
+			    "platform_version": "5.1.1",
+			    "version": "2022.08"
+			  }
+			}
+		RESPONSE
+			{
+			  "unread_conversations": {
+			    "conversations": [
+			      {
+			        "id": "41964",
+			        "read": false,
+			        "dismissed": false,
+			        "participants": [
+			          {
+			            "id": "5355934",
+			            "avatar": {
+			              "initials": "K",
+			              "color": "ffb3c6",
+			              "image_urls": {
+			                "square_25": "https://static.intercomassets.com/avatars/5355934/square_25/Kard_Mascot_Guns_PostProd-1647278356.png",
+			                "square_50": "https://static.intercomassets.com/avatars/5355934/square_50/Kard_Mascot_Guns_PostProd-1647278356.png",
+			                "square_128": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			              },
+			              "image_url": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			            },
+			            "type": "admin",
+			            "name": "Kardy",
+			            "first_name": "Kardy",
+			            "email": "hello@kard.eu",
+			            "is_bot": false
+			          },
+			          {
+			            "id": "623...36a",
+			            "avatar": {
+			              "initials": "GH",
+			              "color": "ffb3c6",
+			              "image_urls": {}
+			            },
+			            "type": "user",
+			            "name": "Gaëtan Hrlt",
+			            "first_name": "Gaëtan",
+			            "email": "urmail@mail.com"
+			          }
+			        ],
+			        "conversation_parts": [
+			          {
+			            "id": "14391724891",
+			            "participant_id": "5355934",
+			            "participant_is_admin": true,
+			            "body": [
+			              {
+			                "type": "paragraph",
+			                "text": "Un grand Merci pour tes suggestions 💜"
+			              },
+			              {
+			                "type": "paragraph",
+			                "text": "Nous les transmettons immédiatement à notre équipe en charge des partenariats. Peut être que ces marques feront partie des prochains deals 🤞"
+			              },
+			              {
+			                "type": "paragraph",
+			                "text": "Pense à regarder régulièrement tes KarDeals pour connaitre toutes les offres en cours 👀"
+			              },
+			              {
+			                "type": "paragraph",
+			                "text": "Si tu as des questions, n'hésite pas, on est là pour toi !"
+			              }
+			            ],
+			            "is_initial_message": false,
+			            "attachments": [],
+			            "message_style": "open",
+			            "show_created_at": true,
+			            "created_at": 1650719736,
+			            "summary": "Un grand Merci pour tes suggestions 💜 Nous les transmettons immédiatement à notre équipe en charge des partenariats. Peut être que ces marques feront partie des prochains deals 🤞 Pense à regarder régulièrement tes KarDeals pour connaitre toutes les offres en cours 👀 Si tu as des questions, n'hésite ",
+			            "event_data": {},
+			            "reply_options": [],
+			            "seen_by_admin": "seen"
+			          }
+			        ],
+			        "last_participating_admin": {
+			          "id": "5355934",
+			          "type": "Admin",
+			          "avatar": {
+			            "initials": "K",
+			            "color": "ffb3c6",
+			            "image_urls": {
+			              "square_25": "https://static.intercomassets.com/avatars/5355934/square_25/Kard_Mascot_Guns_PostProd-1647278356.png",
+			              "square_50": "https://static.intercomassets.com/avatars/5355934/square_50/Kard_Mascot_Guns_PostProd-1647278356.png",
+			              "square_128": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			            },
+			            "image_url": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			          },
+			          "name": "Kardy",
+			          "is_admin": true,
+			          "first_name": "Kardy",
+			          "last_active_at": 1650719736,
+			          "is_active": false,
+			          "is_bot": false,
+			          "is_self": false,
+			          "location": {
+			            "city_name": "",
+			            "country_name": "France",
+			            "country_code": "FR",
+			            "timezone": "Europe/Paris",
+			            "timezone_offset": 7200
+			          },
+			          "social_accounts": [],
+			          "initial": "K"
+			        },
+			        "user_participated": true,
+			        "group_conversation_participant_ids": [],
+			        "operator_client_conditions": [],
+			        "intercom_link_solution": "live-chat",
+			        "composer_state": {
+			          "visible": true,
+			          "version": 0,
+			          "self_serve_suggestions_enabled": false,
+			          "custom_bot_active": false,
+			          "workflow_active": false
+			        },
+			        "prevent_end_user_replies": false,
+			        "inbound_conversations_disabled": false,
+			        "notification_status": "unknown",
+			        "state": "state_closed",
+			        "is_inbound": true
+			      }
+			    ],
+			    "unread_conversation_ids": [
+			      "41964"
+			    ],
+			    "total_count": 1
+			  },
+			  "composer_suggestions": {},
+			  "bot_intro": {},
+			  "team_presence": {
+			    "active_admins": [
+			      {
+			        "id": "5409338",
+			        "first_name": "Léo",
+			        "avatar": {
+			          "initials": "L",
+			          "color": "c8c6c4",
+			          "image_urls": {
+			            "square_25": "https://static.intercomassets.com/avatars/5409338/square_25/Leo-Kard-1645026522.png",
+			            "square_50": "https://static.intercomassets.com/avatars/5409338/square_50/Leo-Kard-1645026522.png",
+			            "square_128": "https://static.intercomassets.com/avatars/5409338/square_128/Leo-Kard-1645026522.png"
+			          },
+			          "image_url": "https://static.intercomassets.com/avatars/5409338/square_128/Leo-Kard-1645026522.png"
+			        },
+			        "has_photo_avatar": true,
+			        "name": "Léo"
+			      },
+			      {
+			        "id": "5355934",
+			        "first_name": "Kardy",
+			        "avatar": {
+			          "initials": "K",
+			          "color": "ffb3c6",
+			          "image_urls": {
+			            "square_25": "https://static.intercomassets.com/avatars/5355934/square_25/Kard_Mascot_Guns_PostProd-1647278356.png",
+			            "square_50": "https://static.intercomassets.com/avatars/5355934/square_50/Kard_Mascot_Guns_PostProd-1647278356.png",
+			            "square_128": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			          },
+			          "image_url": "https://static.intercomassets.com/avatars/5355934/square_128/Kard_Mascot_Guns_PostProd-1647278356.png"
+			        },
+			        "has_photo_avatar": true,
+			        "name": "Kardy"
+			      },
+			      {
+			        "id": "5409418",
+			        "first_name": "Salma",
+			        "avatar": {
+			          "initials": "S",
+			          "color": "6b9cff",
+			          "image_urls": {
+			            "square_25": "https://static.intercomassets.com/avatars/5409418/square_25/Salma-Kard-1647421939.png",
+			            "square_50": "https://static.intercomassets.com/avatars/5409418/square_50/Salma-Kard-1647421939.png",
+			            "square_128": "https://static.intercomassets.com/avatars/5409418/square_128/Salma-Kard-1647421939.png"
+			          },
+			          "image_url": "https://static.intercomassets.com/avatars/5409418/square_128/Salma-Kard-1647421939.png"
+			        },
+			        "has_photo_avatar": true,
+			        "name": "Salma"
+			      },
+			      {
+			        "id": "5409493",
+			        "first_name": "Zahra",
+			        "avatar": {
+			          "initials": "Z",
+			          "color": "0accac",
+			          "image_urls": {
+			            "square_25": "https://static.intercomassets.com/avatars/5409493/square_25/IMG_7939-1644920733.jpg",
+			            "square_50": "https://static.intercomassets.com/avatars/5409493/square_50/IMG_7939-1644920733.jpg",
+			            "square_128": "https://static.intercomassets.com/avatars/5409493/square_128/IMG_7939-1644920733.jpg"
+			          },
+			          "image_url": "https://static.intercomassets.com/avatars/5409493/square_128/IMG_7939-1644920733.jpg"
+			        },
+			        "has_photo_avatar": true,
+			        "name": "Zahra"
+			      },
+			      {
+			        "id": "5123148",
+			        "first_name": "Kevin",
+			        "avatar": {
+			          "initials": "K",
+			          "color": "ffb848",
+			          "image_urls": {
+			            "square_25": "https://static.intercomassets.com/avatars/5123148/square_25/Kevin-1641826041.png",
+			            "square_50": "https://static.intercomassets.com/avatars/5123148/square_50/Kevin-1641826041.png",
+			            "square_128": "https://static.intercomassets.com/avatars/5123148/square_128/Kevin-1641826041.png"
+			          },
+			          "image_url": "https://static.intercomassets.com/avatars/5123148/square_128/Kevin-1641826041.png"
+			        },
+			        "has_photo_avatar": true,
+			        "name": "Kevin"
+			      }
+			    ],
+			    "last_active": 1650720041,
+			    "expected_response_delay": "Répond généralement dans un délai de quelques minutes",
+			    "expected_response_delay_header": "Notre délai de réponse habituel",
+			    "expected_response_delay_details": "Quelques minutes"
+			  },
+			  "config": {
+			    "name": "Kard",
+			    "base_color": "#7800F0",
+			    "audio_enabled": false,
+			    "show_powered_by": false,
+			    "id_code": "bepnqfe3",
+			    "welcome_message": [
+			      {
+			        "type": "paragraph",
+			        "text": "C'est ici que nous répondons à toutes les questions !"
+			      }
+			    ],
+			    "welcome_message_plain_text": "C'est ici que nous répondons à toutes les questions !",
+			    "auto_response": "We'll notify you here and by email when we reply.",
+			    "inbound_messages": true,
+			    "real_time": true,
+			    "is_first_request": false,
+			    "real_time_config": {
+			      "endpoints": [
+			        "https://nexus-websocket-a.intercom.io/pubsub/5-zhQq...CvruY-IpHnFXZPG...f1f-PuSnlI...5Uq-KAuU-2aW...Zo"
+			      ],
+			      "presence_heartbeat_interval": 30,
+			      "connection_timeout": 70
+			    },
+			    "locale": "fr",
+			    "metrics_enabled": true,
+			    "background_requests_enabled": true,
+			    "polling_interval": 7889238,
+			    "no_real_time_throttle": 60,
+			    "user_update_dup_cache_max_age": 600,
+			    "local_rate_limit_period": 60,
+			    "local_rate_limit": 100,
+			    "new_session_threshold": 20,
+			    "soft_reset_timeout": 1,
+			    "help_center_url": "https://intercom.help/kardeu",
+			    "help_center_urls": [
+			      "https://intercom.help/kardeu",
+			      "https://aide.kard.eu"
+			    ],
+			    "help_center_base_color": "#7800F0",
+			    "help_center_locale": "fr",
+			    "features": [],
+			    "secondary_color": "#7800F0",
+			    "primary_color_render_dark_text": false,
+			    "secondary_color_render_dark_text": false,
+			    "help_center_color_render_dark_text": false,
+			    "team_intro": "C'est ici que nous répondons à toutes les questions !",
+			    "team_greeting": "Hello Gaëtan 👋",
+			    "launcher_bottom_padding": 16,
+			    "launcher_alignment": "right",
+			    "identity_verification_enabled": true,
+			    "user_conversation_attachments_enabled": true,
+			    "user_conversation_gifs_enabled": true,
+			    "access_to_teammate_enabled": true,
+			    "help_center_require_search": false,
+			    "upload_size_limit": 41943040,
+			    "prevent_multiple_inbound_conversations_enabled": true
+			  },
+			  "user": {
+			    "type": "user",
+			    "intercom_id": "6234a6a20d73afe082e8836a",
+			    "encrypted_user_id": "WllNT0o...4dz09--476...f0a",
+			    "email": "urmail@mail.com",
+			    "user_id": "9ac...87-b231-44f0-9980-48...4c"
+			  },
+			  "has_conversations": true
+			}
+
+
+		# Reply
+		METHOD		POST
+		URL 		https://bepnqfe3-android.mobile-messenger.intercom.com/messenger/mobile/conversations/41964/reply
+		HEADERS
+			same
+		JSON
+			{
+			  "app_id": "bepnqfe3",
+			  "hmac": "911e5d...9ac493",
+			  "user": {
+			    "email": "urmail@mail.com",
+			    "type": "user",
+			    "intercom_id": "6234a...36a",
+			    "user_id": "9a...87-b231-44f0-9980-48...4c"
+			  },
+			  "type": "user",
+			  "blocks": [
+			    {
+			      "text": "Merci !",
+			      "type": "paragraph"
+			    }
+			  ],
+			  "message_type": "comment"
+			}
+		RESPONSE
+			{
+			  "id": "1439...37",
+			  "participant_id": "6234a...36a",
+			  "participant_is_admin": false,
+			  "body": [
+			    {
+			      "type": "paragraph",
+			      "text": "Merci !"
+			    }
+			  ],
+			  "is_initial_message": false,
+			  "attachments": [],
+			  "message_style": "open",
+			  "show_created_at": true,
+			  "created_at": 1650720162,
+			  "summary": "Merci !",
+			  "event_data": {},
+			  "reply_options": [],
+			  "seen_by_admin": "unseen",
+			  "config": {
+			    "name": "Kard",
+			    "base_color": "#7800F0",
+			    "audio_enabled": false,
+			    "show_powered_by": false,
+			    "id_code": "bepnqfe3",
+			    "welcome_message": [
+			      {
+			        "type": "paragraph",
+			        "text": "C'est ici que nous répondons à toutes les questions !"
+			      }
+			    ],
+			    "welcome_message_plain_text": "C'est ici que nous répondons à toutes les questions !",
+			    "auto_response": "We'll notify you here and by email when we reply.",
+			    "inbound_messages": true,
+			    "real_time": true,
+			    "is_first_request": false,
+			    "real_time_config": {
+			      "endpoints": [
+			        "https://nexus-websocket-a.intercom.io/pubsub/5-AlRpX...mp5P-aC...4gSQ-59STt...ToZ"
+			      ],
+			      "presence_heartbeat_interval": 30,
+			      "connection_timeout": 70
+			    },
+			    "locale": "fr",
+			    "metrics_enabled": true,
+			    "background_requests_enabled": true,
+			    "polling_interval": 7889238,
+			    "no_real_time_throttle": 60,
+			    "user_update_dup_cache_max_age": 600,
+			    "local_rate_limit_period": 60,
+			    "local_rate_limit": 100,
+			    "new_session_threshold": 20,
+			    "soft_reset_timeout": 1,
+			    "help_center_url": "https://intercom.help/kardeu",
+			    "help_center_urls": [
+			      "https://intercom.help/kardeu",
+			      "https://aide.kard.eu"
+			    ],
+			    "help_center_base_color": "#7800F0",
+			    "help_center_locale": "fr",
+			    "features": [],
+			    "secondary_color": "#7800F0",
+			    "primary_color_render_dark_text": false,
+			    "secondary_color_render_dark_text": false,
+			    "help_center_color_render_dark_text": false,
+			    "team_intro": "C'est ici que nous répondons à toutes les questions !",
+			    "team_greeting": "Hello Gaëtan 👋",
+			    "launcher_bottom_padding": 16,
+			    "launcher_alignment": "right",
+			    "identity_verification_enabled": true,
+			    "user_conversation_attachments_enabled": true,
+			    "user_conversation_gifs_enabled": true,
+			    "access_to_teammate_enabled": true,
+			    "help_center_require_search": false,
+			    "upload_size_limit": 41943040,
+			    "prevent_multiple_inbound_conversations_enabled": true
+			  },
+			  "user": {
+			    "type": "user",
+			    "intercom_id": "6234a6a20d73afe082e8836a",
+			    "encrypted_user_id": "WEpCL1R...QT09--8aca70...8be3df",
+			    "email": "urmail@mail.com",
+			    "user_id": "9a...87-b231-44f0-9980-48...4c"
+			  },
+			  "has_conversations": true
+			}
+
+
+		"""
+
+
+
+
 
 k = Kard()
 k.init()
