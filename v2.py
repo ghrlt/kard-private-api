@@ -37,6 +37,7 @@ class Kard:
 		self.subscription = KardSubscription()
 		self.cashback = KardCashback()
 		self.account = KardAccount()
+		self.vaults = KardVaults()
 		self.cards = KardCards()
 		self.money = KardMoney()
 		self.family = KardFamily()
@@ -1617,10 +1618,249 @@ class KardActivities(Kard):
 		"""
 
 
+class KardVaults(Kard):
+	def __init__(self):
+		super().__init__()
+
+	@property
+	def list(self):
+		payload = {
+			"query": "query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\n"
+				"fragment Vault_VaultParts on Vault { id name color emoji { name unicode } goal { value } balance { value }}",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['me']['vaults']
+
+	@property
+	def total_saved(self):
+		payload = {
+			"query": "query androidMe { me { ... Me_MeParts }}\n\n"
+				"fragment Me_MeParts on Me { savingsAmount { value } }",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['me']['savingsAmount']['value']
+
+	@property
+	def save_goal(self):
+		payload = {
+			"query": "query androidListVault { me { vaults { ... Vault_VaultParts } }}\n\n"
+				"fragment Vault_VaultParts on Vault { goal { value } }",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return sum([v['goal']['value'] for v in r['data']['me']['vaults']])
+
+	def create(self, name: str, goal: float, currency: str="EUR"):
+		payload = {
+			"query": "mutation androidCreateVault($goal: AmountInput!, $name: Name!) { createVault(input: {goal: $goal, name: $name}) { errors { message path } vault { id } }}",
+			"variables": {
+				"goal": {"value": goal, "currency": currency},
+				"name": name
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['createVault']['vault'].get('id')
+
+		#{'errors': [{'message': 'Variable $goal of type AmountInput! was provided invalid value for value (Value has to be positive (received: -1))', 'locations': [{'line': 1, 'column': 29}], 'extensions': {'value': {'value': -1, 'currency': 'EUR'}, 'problems': [{'path': ['value'], 'explanation': 'Value has to be positive (received: -1)', 'message': 'Value has to be positive (received: -1)'}]}}]}
+		#{'errors': [{'message': 'Variable $goal of type AmountInput! was provided invalid value for value (Value is too high (received: 100000000))', 'locations': [{'line': 1, 'column': 29}], 'extensions': {'value': {'value': 100000000, 'currency': 'EUR'}, 'problems': [{'path': ['value'], 'explanation': 'Value is too high (received: 100000000)', 'message': 'Value is too high (received: 100000000)'}]}}]}
+
+		# WARNING: You cannot put an amount of 0 BUT you can put an amount of 0.001 or lower
+		# and the api call will work BUT, the api will return a goal value of 0 & your app will crash lol
+
+	def get_object(self, vault_id):
+		return KardVault(vault_id, [v for v in self.list if v['id'] == vault_id][0])
+
+class KardVault(Kard):
+	def __init__(self, vault_id, vault_obj):
+		super().__init__()
+
+		self._id = vault_id
+		self._json = vault_obj
+
+	@property
+	def complete_data(self):
+		d = {**self._json, "transactions": self.transactions}
+		return d
+
+	@property
+	def transactions(self):
+		return self.get_all_transactions()
+
+	def get_transactions(self, limit: int, after: str):
+		payload = {
+			"query": "query androidGetVaultTransactions($vaultId: ID!, $first: Int, $after: String, $numberOfComments: Int) { vault(vaultId: $vaultId) { id transactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { ... Transaction_TransactionParts } } }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked scheme ... on PhysicalCard { atm contactless swipe online design orderedAt }}\n\nfragment Vault_VaultParts on Vault { id name color emoji { name unicode } goal { value } balance { value }}\n\nfragment Transaction_TransactionParts on Transaction { __typename id title status address image { id url } visibility amount { value currency { symbol } } category { name color image { url } } processedAt comments(first: $numberOfComments) { totalCount pageInfo { endCursor hasNextPage } nodes { id comment createdAt user { id firstName lastName avatar { url } } } } quickAnswers { message } user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on CardTransaction { card { ... Card_CardParts } mobilePaymentProvider cashback { id status brandLogo brandName amount { value currency { symbol } } } } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultParts } } ... on MoneyLinkTransaction { from message } ... on TopupTransaction { sender { nickname member { id profile { firstName } } } message } ... on RejectedTransaction { rejectionReason mobilePaymentProvider } ... on CashbackTransaction { cashback { id brandLogo brandName amount { value currency { symbol } } status sourceTransaction { id title amount { value currency { symbol } } } } } ... on GiftTransaction { amount { value } }}",
+			"variables": {
+				"numberOfComments": 0,
+				"vaultId": self.id,
+				"first": limit,
+				"after": after
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		transactions = r['data']['vault']['transactions']['nodes']
+		return transactions, r['data']['vault']['transactions']['pageInfo']['endCursor']
+
+	def get_all_transactions(self, explicit_refresh: bool=False):
+		cursor = None
+		transactions = []
+
+		# This is a necessity to avoid API spam & avoid Memory/Speed issues
+		if not explicit_refresh:
+			try: return self.all
+			except: pass
+
+		while True:
+			r = self.get_transactions(10, cursor)
+			cursor = r[1]
+
+			#for t in r[0]:
+			#	print(t['id'], t['title'], t['processedAt'])
+
+			if r[0]:
+				if transactions and transactions[-1]['id'] == r[0][0]['id']:
+					break
+				else:
+					transactions += r[0]
+			else:
+				break
+
+		self._all_transactions = transactions
+		return transactions
+
+	@property
+	def id(self):
+		return self._id
+	
+	@property
+	def name(self):
+		return self._json['name']
+
+	@property
+	def balance(self):
+		return self._json['balance']['value']
+
+	@property
+	def goal(self):
+		return self._json['goal']['value']
+
+	@property
+	def emote(self):
+		return self._json['emoji']
+	
+	@property
+	def emoji(self):
+		return self.emote
+
+	@property
+	def color(self):
+		return self._json['color']
+
+	@property
+	def colour(self):
+		return self.color
+
+	def add_money(self, amount: float, currency: str="EUR"):
+		payload = {
+			"query": "mutation androidTransferMoney($sourceId: ID, $destinationId: ID!,$amount: AmountInput!) { transferMoney(input: {sourceId: $sourceId, destinationId: $destinationId, amount: $amount}) { errors { message path } }}",
+			"variables": {
+				"amount": {"value": amount, "currency": currency},
+				"sourceId": KardBankAccount().id, "destinationId": self.id
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+	def edit_emote(self, emote: str):
+		valid_emotes = ["🎁", "🎈", "🛍", "💰", "😈", "🎓", "🏝", "🎫", "🎸", "✈️", "👟", "📱", "🎮", "🛴", "🛵"]
+
+		payload = {
+		  "query": "mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } vault { id name color emoji { name unicode } goal { value } balance { value } } }}",
+		  "variables": {
+		    "vaultId": self.id,
+		    "emoji": emote
+		  },
+		  "extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		try: self._json = r['data']['updateVault']['vault']
+		except: pass
+
+		return r
+
+		#{'errors': [{'message': 'Variable $emoji of type EmojiInput was provided invalid value', 'locations': [{'line': 1, 'column': 74}], 'extensions': {'value': '✈', 'problems': [{'path': [], 'explanation': '"✈" is not a valid emoji', 'message': '"✈" is not a valid emoji'}]}}]}
+
+	def edit_color(self, color: str):
+		official_colors = {
+			"purpleblack": "#1f193f", 	"grey":"#75818c",
+			"purplelight": "#bd3fdd",	"yellow":"#ffca10",
+			"purpledark": "#9850ff",	"pink":"#f943b1",	
+			"black": "#1b1d20", 		"green":"#3ce977",
+			"orange":"#ff9455", 		"red": "#ff5f7c",
+			"cyan":"#15e4da", 			"blue": "#35c4ff"
+		} #Any hexadecimal code will work though! (Must provide in a 6+1char format!)
+		
+		if color in official_colors:
+			color = official_colors[color]
+
+		payload = {
+		  "query": "mutation androidUpdateVault($vaultId: ID!, $color: HexadecimalColorCode, $emoji: EmojiInput, $name: Name) { updateVault(input: {vaultId: $vaultId, color: $color, emoji: $emoji, name: $name}) { errors { message path } vault { id name color emoji { name unicode } goal { value } balance { value } } }}",
+		  "variables": {
+		    "vaultId": self.id,
+		    "color": color
+		  },
+		  "extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		try: self._json = r['data']['updateVault']['vault']
+		except: pass
+		
+		return r
+
+		#{'data': {'updateVault': {'errors': []}}}
+		#{'errors': [{'message': 'Variable $color of type HexadecimalColorCode was provided invalid value', 'locations': [{'line': 1, 'column': 44}], 'extensions': {'value': '#0F0', 'problems': [{'path': [], 'explanation': '"#0F0" is not a valid hexadecimal color code', 'message': '"#0F0" is not a valid hexadecimal color code'}]}}]}
+
+	def close(self):
+		payload = {
+			"query": "mutation androidCloseVault($vaultId: ID!) { closeVault(input: {vaultId: $vaultId}) { errors { message path } }}",
+			"variables": {"vaultId": self.id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+	
+
+	def edit_colour(self, *args, **kwargs):
+		return self.edit_color(*args, **kwargs)
+
+	def edit_emoji(self, *args, **kwargs):
+		return self.edit_emoji(*args, **kwargs)
+	
+	def topup(self, *args, **kwargs):
+		return self.add_money(*args, **kwargs)
+
+	def delete(self, *args, **kwargs):
+		return self.close(*args, **kwargs)	
+
 
 
 
 k = Kard()
 k.init()
 
-print( k.money.topup_from_saved_card(10, k.cards.default_used_for_topup['providerSourceId'], "388") )
