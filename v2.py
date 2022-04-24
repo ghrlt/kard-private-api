@@ -33,12 +33,16 @@ class Kard:
 
 	def init(self):
 		self.login = KardLogin()
-		self.account = KardAccount()
-		self.cards = KardCards()
-		self.bank = KardBankAccount()
+
 		self.subscription = KardSubscription()
 		self.cashback = KardCashback()
+		self.account = KardAccount()
+		self.cards = KardCards()
+		self.money = KardMoney()
+		self.family = KardFamily()
+		self.bank = KardBankAccount()
 		self.contacts = KardContacts()
+		self.transactions = KardTransactions()
 
 
 class KardLocalSecrets(Kard):
@@ -355,6 +359,7 @@ class KardCards(Kard):
 			"extensions":{}
 		}
 		r = self.s.post(self.api_host, json=payload).json()
+
 		if not r['data']['updateCard']['card']['blocked']:
 			raise Exception(r['data']['updateCard']['errors'])
 
@@ -366,6 +371,7 @@ class KardCards(Kard):
 			"extensions":{}
 		}
 		r = self.s.post(self.api_host, json=payload).json()
+
 		if r['data']['updateCard']['card']['blocked']:
 			raise Exception(r['data']['updateCard']['errors'])
 
@@ -1259,7 +1265,279 @@ class KardContacts(Kard):
 		return r.get('errors') or r['data']['acceptFriend']['errors']
 
 
+class KardFamily(Kard):
+	def __init__(self):
+		super().__init__()
+
+	@property
+	def complete_data(self):
+		payload = {
+			"query": "query androidFamily { me { family { ... Family_FamilyParts } }}\n\n"
+				"fragment Topup_TopupCardParts on TopupCard { id name expirationDate default last4 providerSourceId providerPaymentId}\n\n"
+				"fragment Topup_RecurringParts on RecurringPayment { id active amount { value currency { symbol isoCode } } child { id } firstPayment nextPayment cancelledAt topupCard { ... Topup_TopupCardParts }}\n\n"
+				"fragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked scheme ... on PhysicalCard { atm contactless swipe online design orderedAt }}\n\n"
+				"fragment Me_KycParts on Kyc { required deadline globalStatus fundsOrigin { status value rejectionReason } identityVerification { status url rejectionReason score } proofOfAddress { status files { contentType url ... on Image { width height } } rejectionReason } canStart lastRejectedIdentityVerification { status url rejectionReason score} nbOfRejectedIdentityVerifications}\n\n"
+				"fragment Me_SubscriptionParts on Subscription { id status cancelledAt cancellationReason nextBilling { date amount { value currency { isoCode name symbol symbolFirst } } } plan { __typename id periodUnit name providerId price { value } }}\n\n"
+				"fragment Family_MeParts on Me { id type createdAt profile { avatar { url } firstName lastName username age birthday placeOfBirth shippingAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } homeAddress { firstName lastName street line1 line2 zipcode city state country fullAddress } } card { id } canOrderCard cardBeingSetup { __typename id customText name ... on PhysicalCard { design } } outgoingRecurringPayments { ... Topup_RecurringParts } incomingRecurringPayment { ... Topup_RecurringParts } cards { nodes { ... Card_CardParts } } email claimId canOrderCard phoneNumber bankAccount { id iban bic user { firstName lastName } balance { value currency { symbol isoCode } } lockedTransactions } topupCards { ... Topup_TopupCardParts } kyc { ... Me_KycParts } subscription { ... Me_SubscriptionParts } onboardingDone savingsAmount { value } topupIncentiveActivated noPhoneNumber currentSpendings { monthlyPos { value } weeklyPos { value } weeklyAtm { value } monthlyAtm { value } } transactionLimits { id amount { value currency { symbol } } recurrence transactionType }}\n\n"
+				"fragment Family_FamilyParts on Family { memberships { status primary type nickname member { ... Family_MeParts } }}",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		return r['data']['me']['family']['memberships']
+
+	@property
+	def parents(self):
+		members = self.complete_data
+		parents = []
+
+		for member in members:
+			if member['type'] == "PARENT":
+				parents.append(member)
+
+		return parents
+
+	@property
+	def siblings(self):
+		members = self.complete_data
+		siblings = []
+
+		for member in members:
+			if member['type'] != "PARENT":
+				siblings.append(member)
+
+		return siblings
+
+
+class KardTransactions(Kard):
+	def __init__(self):
+		super().__init__()
+
+	@property
+	def complete_data(self):
+		# Voluntarily not putting friends public transactions
+		# as it is a discontinued feature in the app, and so might soon be in the API
+
+		return self.get_all()
+
+	def get(self, limit: int, after: str):
+		payload = {
+			"query": "query androidTransactions($first: Int, $after: String) { me { bankAccount { balance { value } } typedTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title status visibility amount { value currency { symbol } } category { name color image { url } } user { id firstName lastName username } processedAt ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on CardTransaction { card { ... Card_CardParts } mobilePaymentProvider cashback { id status brandLogo brandName amount { value currency { symbol } } } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } ... on TopupTransaction { sender { nickname member { id profile { firstName } } } message } ... on RejectedTransaction { rejectionReason } ... on CashbackTransaction { cashback { id status brandLogo brandName amount { value currency { symbol } } sourceTransaction { id title image { id url } category { name color image { url } } amount { value currency { symbol } } } } } } } typedFriendsTransactions(first: $first, after: $after) { pageInfo { endCursor hasNextPage } nodes { __typename id title category { name image { url } } processedAt user { id firstName lastName username avatar { url } } ...on P2pTransaction { triggeredBy { id firstName lastName username avatar { url } } reason } ...on ClosingAccountTransaction { moneyAccount { ... Vault_VaultMiniParts } } ...on InternalTransferTransaction { moneyAccount { ... Vault_VaultMiniParts } } ... on MoneyLinkTransaction { from message } ... on TopupTransaction { sender { nickname member { id profile { firstName } } } message } } } }}\n\nfragment Vault_VaultMiniParts on Vault { name color emoji { name unicode }}\n\nfragment Card_CardParts on Card { __typename id activatedAt customText name visibleNumber blocked scheme ... on PhysicalCard { atm contactless swipe online design orderedAt }}",
+			"variables": {
+				"after": after,
+				"first": limit
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		transactions = r['data']['me']['typedTransactions']['nodes']
+		return transactions, r['data']['me']['typedTransactions']['pageInfo']['endCursor']
+
+	def get_all(self, explicit_refresh: bool=False):
+		cursor = None
+		transactions = []
+
+		# This is a necessity to avoid API spam & avoid Memory/Speed issues
+		if not explicit_refresh:
+			try: return self.all
+			except: pass
+
+		while True:
+			r = self.get(20, cursor)
+			cursor = r[1]
+
+			#for t in r[0]:
+			#	print(t['id'], t['title'], t['processedAt'])
+
+			if r[0]:
+				if transactions and transactions[-1]['id'] == r[0][0]['id']:
+					break
+				else:
+					transactions += r[0]
+			else:
+				break
+
+		self.all = transactions
+		return transactions
+
+	@property
+	def incoming(self):
+		incoming_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['amount']['value'] > 0:
+				incoming_transactions.append(transaction)
+
+		return incoming_transactions
+	
+	@property
+	def outgoing(self):
+		outgoing_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['amount']['value'] < 0:
+				outgoing_transactions.append(transaction)
+
+		return outgoing_transactions
+
+	@property
+	def internal(self):
+		internal_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] in ["InternalTransferTransaction", "ClosingAccountTransaction"]:
+				internal_transactions.append(transaction)
+
+		return internal_transactions
+
+	@property
+	def through_p2p(self):
+		p2p_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "P2pTransaction":
+				p2p_transactions.append(transaction)
+
+		return p2p_transactions
+	
+	@property
+	def through_card(self):
+		card_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "CardTransaction":
+				card_transactions.append(transaction)
+
+		return card_transactions
+
+	@property
+	def through_banktransfer(self):
+		banktransfer_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "BankTransaction":
+				banktransfer_transactions.append(transaction)
+
+		return banktransfer_transactions
+
+	@property
+	def from_slash(self):
+		slash_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "MoneyLinkTransaction":
+				slash_transactions.append(transaction)
+
+		return slash_transactions
+	
+	@property
+	def topups(self):
+		topup_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "TopupTransaction":
+				topup_transactions.append(transaction)
+
+		return topup_transactions
+
+	@property
+	def rejected(self):
+		rejected_transactions = []
+
+		for transaction in self.get_all():
+			if transaction['__typename'] == "RejectedTransaction":
+				rejected_transactions.append(transaction)
+
+		return rejected_transactions
+
+
+class KardMoney(Kard):
+	def __init__(self):
+		super().__init__()
+
+	@property
+	def balance(self):
+		payload = {
+			"query": "query androidMe { me { ... Me_MeParts }}\n\n"
+				"fragment Me_MeParts on Me { bankAccount { balance { value } }}",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['me']['bankAccount']['balance']['value']
+
+	@property
+	def receive_methods(self):
+		d = {
+			"bankTransfer": {
+				**KardBankAccount().iban,
+				"rib": self.s.get(f"https://api.kard.eu/bank_account_details/{KardBankAccount().id}.pdf").content
+			},
+			"slashLink": f"https://s.kard.eu/{KardAccount().username}"
+		}
+
+		return d
+
+
+	def send(self, amount: float):
+		#todo
+		pass
+	
+	def topup_from_saved_card(self, amount: float):
+		#todo
+		pass
+
+	def request_from_friend(self, friend_id, amount: float, reason: str="", currency: str="EUR"):
+		payload = {
+			"query": "mutation androidRequestMoney($input: RequestMoneyInput!) { requestMoney(input: $input) { errors { path message } request { id amount { value currency { isoCode } } reason paymentLink owner { id username firstName lastName avatar { url } } } }}",
+			"variables": {
+				"input": {
+					"internalUsersIds": [friend_id],
+					"externalUsers": [],
+					"amount": {"value": amount, "currency": currency},
+					"reason": reason
+				}
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+	def request_from_parent(self, amount: float, reason: str="", currency: str="EUR"):
+		payload = {
+			"query": "mutation androidAskParentForMoney($amount: AmountInput!, $parentId: ID!, $reason: String) { askParentForMoney(input: {amount: $amount, parentId: $parentId, reason: $reason}) { clientMutationId errors { message path } }}",
+			"variables": {
+				"amount": {"value": amount, "currency": currency},
+				"parentId": KardFamily().parents[0]['id'], "reason": reason
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+	@property
+	def pending_requests(self):
+		#todo
+		pass
+
+	def reject_request(self, request_id):
+		#todo
+		pass
+
+	def accept_request(self, request_id):
+		#todo
+		pass
+
+
+
+
+
 
 k = Kard()
 k.init()
-print( k.contacts.friends )
+
+print( k.money.receive_methods )
