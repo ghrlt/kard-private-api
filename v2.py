@@ -1480,18 +1480,69 @@ class KardMoney(Kard):
 
 		return d
 
+	@property
+	def _incoming_requests(self):
+		payload = {
+			"query": "query androidMe { me { ... Me_MeParts }}\n\n"
+				"fragment Me_MeParts on Me { pendingDebts { amount { value currency { symbol isoCode } } id owner { avatar { url } firstName id lastName username } reason } }",
+			"variables": {},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
 
-	def send(self, amount: float):
+		return r['data']['me']['pendingDebts']
+
+	@property
+	def outgoing_requests(self):
 		#todo
+
+		# Seems that we cannot know this | At least not for the ones sent to other children
+
 		pass
-	
-	def topup_from_saved_card(self, amount: float):
-		#todo
-		pass
+
+	def send(self, friend_id, amount: float, reason: str):
+		payload = {
+			"query": "mutation androidSendMoney($input: SendMoneyInput!) { sendMoney(input: $input) { errors { path message } } }",
+			"variables": {
+				"input": {
+					"internalUsersIds": [friend_id],
+					"externalUsers": [],
+					"amount": {"value": amount, "currency": "EUR"},
+					"reason": "reason"
+				}
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+	def topup_from_saved_card(self, amount: float, card_providerSourceId: str, card_cvv: str):
+		payload = {
+			"query": "mutation androidTopupAccount($paymentSource: PaymentSource!, $amount: AmountInput!, $cvv: Cvv!, $childId: ID, $recipientId: ID, $failureUrl: String, $successUrl: String, $message: MoneyLinkMessage!) { topupAccount(input: { paymentSource: $paymentSource, cvv: $cvv, amount: $amount, childId: $childId, recipientId: $recipientId, failureUrl: $failureUrl, successUrl: $successUrl, message: $message }) { paymentId secureFormUrl errors { message path } }}",
+			"variables": {
+				"childId": KardAccount().id,
+				"amount": {"value": amount, "currency": "EUR"},
+				"paymentSource": card_providerSourceId,
+				"failureUrl": "https://eu.kard.app/3ds/failure",
+				"cvv": card_cvv,
+				"message": "",
+				"successUrl": "https://eu.kard.app/3ds/success"
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		#return r['data']['topupAccount']['secureFormUrl']
+		return r
+
+		#{'data': {'topupAccount': {'paymentId': 'pay_bpd...hce6y', 'secureFormUrl': 'https://api.checkout.com/sessions-interceptor/sid_uy4...uby4', 'errors': []}}}
+		#{'data': {'topupAccount': {'paymentId': None, 'secureFormUrl': None, 'errors': [{'message': 'Amount must be greater than or equal to 5', 'path': ['attributes', 'amount']}]}}}
+		#{'errors': [{'message': 'Variable $amount of type AmountInput! was provided invalid value for value (Value has to be positive (received: -10))', 'locations': [{'line': 1, 'column': 62}], 'extensions': {'value': {'value': -10, 'currency': 'EUR'}, 'problems': [{'path': ['value'], 'explanation': 'Value has to be positive (received: -10)', 'message': 'Value has to be positive (received: -10)'}]}}]}
 
 	def request_from_friend(self, friend_id, amount: float, reason: str="", currency: str="EUR"):
 		payload = {
-			"query": "mutation androidRequestMoney($input: RequestMoneyInput!) { requestMoney(input: $input) { errors { path message } request { id amount { value currency { isoCode } } reason paymentLink owner { id username firstName lastName avatar { url } } } }}",
+			"query": "mutation androidRequestMoney($input: RequestMoneyInput!) { requestMoney(input: $input) { errors { path message } }}",
 			"variables": {
 				"input": {
 					"internalUsersIds": [friend_id],
@@ -1506,6 +1557,9 @@ class KardMoney(Kard):
 
 		return r
 
+		#{'data': {'requestMoney': {'errors': []}}}
+		#{'errors': [{'message': 'Variable $input of type RequestMoneyInput! was provided invalid value for amount.value (Value has to be positive (received: -0.01))', 'locations': [{'line': 1, 'column': 30}], 'extensions': {'value': {'internalUsersIds': ['Z2lkOi8va2FyZC1hcGkvVXNlci8zOGFlNmJjOC1hNWIyLTRlZmQtOGRjOS1hZWYyN2VjYjA0ZTY'], 'externalUsers': [], 'amount': {'value': -0.01, 'currency': 'EUR'}, 'reason': 'test'}, 'problems': [{'path': ['amount', 'value'], 'explanation': 'Value has to be positive (received: -0.01)', 'message': 'Value has to be positive (received: -0.01)'}]}}]}
+
 	def request_from_parent(self, amount: float, reason: str="", currency: str="EUR"):
 		payload = {
 			"query": "mutation androidAskParentForMoney($amount: AmountInput!, $parentId: ID!, $reason: String) { askParentForMoney(input: {amount: $amount, parentId: $parentId, reason: $reason}) { clientMutationId errors { message path } }}",
@@ -1519,19 +1573,48 @@ class KardMoney(Kard):
 
 		return r
 
-	@property
-	def pending_requests(self):
-		#todo
-		pass
 
 	def reject_request(self, request_id):
-		#todo
-		pass
+		payload = {
+			"query": "mutation androidRejectMoneyRequest($moneyRequestId: ID!) { rejectMoneyRequest(input: {moneyRequestId: $moneyRequestId}) { errors { path message } }}",
+			"variables": {"moneyRequestId": request_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
 
 	def accept_request(self, request_id):
-		#todo
-		pass
+		payload = {
+			"query": "mutation androidAcceptMoneyRequest($moneyRequestId: ID!) { acceptMoneyRequest(input: {moneyRequestId: $moneyRequestId}) { errors { path message } }}",
+			"variables": {"moneyRequestId": request_id},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
 
+		return r
+
+		#{'data': {'acceptMoneyRequest': {'errors': []}}}
+		#{'data': {'acceptMoneyRequest': {'errors': [{'path': ['attributes', 'max_outgoing_amount'], 'message': 'Cannot spend that much money'}]}}}
+
+
+class KardActivities(Kard):
+	def __init__(self):
+		super().__init__()
+
+		"""
+		{
+		  "query": "query androidGetActivityItems { activityItems { id onClickUrl title body icon isRead isDone createdAt device modal { title body buttonTitle onClickUrl kardy withCelebration } }}",
+		  "variables": {},
+		  "extensions": {}
+		}
+		RESPONSE
+		{
+		  "data": {
+		    "activityItems": []
+		  }
+		}
+		"""
 
 
 
@@ -1540,4 +1623,4 @@ class KardMoney(Kard):
 k = Kard()
 k.init()
 
-print( k.money.receive_methods )
+print( k.money.topup_from_saved_card(10, k.cards.default_used_for_topup['providerSourceId'], "388") )
