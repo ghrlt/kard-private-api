@@ -1453,6 +1453,23 @@ class KardTransactions(Kard):
 		return rejected_transactions
 
 
+	def edit_title(self, transaction_id, new_name: str):
+		payload = {
+			"query": "mutation androidUpdateTransaction($input: UpdateTransactionInput!) { updateTransaction(input: $input) { errors { message path } } }",
+			"variables": {
+				"input": {
+					"transactionId": transaction_id,
+					"attributes": {"title": new_name}
+				}
+			},
+			"extensions":{}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+		
+		return r
+
+
+
 class KardMoney(Kard):
 	def __init__(self):
 		super().__init__()
@@ -1863,4 +1880,3 @@ class KardVault(Kard):
 
 k = Kard()
 k.init()
-
