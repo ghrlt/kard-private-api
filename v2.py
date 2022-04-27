@@ -1309,6 +1309,22 @@ class KardFamily(Kard):
 
 		return siblings
 
+	def set_parent_nickname(self, parent_id, nickname: str):
+		payload = {
+			"query": "mutation androidUpdateNickname($parentId: ID!, $nickname: String!) { updateNickname(input: {parentId: $parentId, nickname: $nickname}) { errors { message path } }}",
+			"variables": {
+				"nickname": nickname,
+				"parentId": parent_id
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+		#if user_id not parent id -> {'errors': ['You are not allowed to do this']}
+
+
 
 class KardTransactions(Kard):
 	def __init__(self):
