@@ -226,6 +226,17 @@ class KardAccount(Kard):
 		r = self.s.post(self.api_host, json=payload).json()
 
 		return r['data']['me']['profile']['lastName']
+	
+	@property
+	def birthdate(self):
+		payload = {
+			"query": "query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { birthday } }",
+			"variables":{},
+			"extensions":{}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r['data']['me']['profile']['birthday']
 
 	@property
 	def username(self):
@@ -275,6 +286,63 @@ class KardAccount(Kard):
 	def referralUrl(self):
 		referralCode = self.referralCode
 		return f"https://kard.eu?r={referralCode}"
+
+	def set_access_pin_code(self, new_pin):
+		payload = {
+			"query": "mutation androidSetPasscode($input: SetPasscodeInput!) { setPasscode(input: $input) { passcodeSet errors { path message } }}",
+			"variables": {
+				"input": {"passcode": new_pin}
+			},
+			"extensions": {}
+		}
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
+
+	def reset_pin_code(self, _input=None, step=1):
+		#_input, for step 1 should be birthdate, in yyyy-mm-dd format
+		#		for step 2 should be OTP codee received by sms
+		#		for step 3 should be the new 4 digits pin
+
+		# --> If someone has a better way to handle this 3 step function, lmk <--
+
+		if step == 1:
+			payload = {
+				"query": "mutation androidForgotPasscode($phoneNumber: PhoneNumber!, $dateOfBirth: ISO8601Date!) { forgotPasscode(input: { phoneNumber: $phoneNumber, dateOfBirth: $dateOfBirth }) { errors { message path } nextRetryAt }}",
+				"variables": {
+					"dateOfBirth": _input or KardAccount().birthdate,
+					"phoneNumber": self.secrets.phone_number
+				},
+				"extensions": {}
+			}
+		elif step == 2:
+			payload = {
+				"query": "mutation androidVerifyPasscodeForgottenOtp($phoneNumber: PhoneNumber!, $code: String!) { verifyPasscodeForgottenOtp(input: { phoneNumber: $phoneNumber, code: $code }) { errors { message path } }}",
+				"variables": {
+					"phoneNumber": self.secrets.phone_number,
+					"code": _input
+				},
+				"extensions": {}
+			}
+			self.temp_otp = _input
+
+		elif step == 3:
+			payload = {
+				"query": "mutation androidChangePasscode($phoneNumber: PhoneNumber!, $code: String!, $newPasscode: Passcode!) { changePasscode(input: { code: $code, phoneNumber: $phoneNumber, newPasscode: $newPasscode }) { errors { message path } }}",
+				"variables": {
+					"newPasscode": _input,
+					"phoneNumber": self.secrets.phone_number,
+					"code": self.temp_otp
+				},
+				"extensions": {}
+			}
+
+		else:
+			return {"errors": [{"message": "wtf is that step?"}]}
+
+		r = self.s.post(self.api_host, json=payload).json()
+
+		return r
 
 
 class KardCards(Kard):
@@ -1325,7 +1393,6 @@ class KardFamily(Kard):
 		#if user_id not parent id -> {'errors': ['You are not allowed to do this']}
 
 
-
 class KardTransactions(Kard):
 	def __init__(self):
 		super().__init__()
@@ -1483,7 +1550,6 @@ class KardTransactions(Kard):
 		r = self.s.post(self.api_host, json=payload).json()
 		
 		return r
-
 
 
 class KardMoney(Kard):
@@ -1896,3 +1962,6 @@ class KardVault(Kard):
 
 k = Kard()
 k.init()
+
+for i in range(1,4):
+	print( k.account.reset_pin_code(_input=input(), step=i) )
