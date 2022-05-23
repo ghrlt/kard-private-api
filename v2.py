@@ -83,12 +83,13 @@ class KardLogin(Kard):
 		super().__init__()
 
 		if self.secrets.access_token:
-			if self.is_still_logged_in():
+			if self.is_still_logged_in:
 				self.is_logged_in = True
 				return
 
 		self.init_login()
 
+	@property
 	def is_still_logged_in(self):
 		payload = {
 			"query": "query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { id }",
@@ -208,13 +209,13 @@ class KardAccount(Kard):
 	@property
 	def firstname(self):
 		payload = {
-			"query": "query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { firstName }",
+			"query": "query androidMe { me { ... Me_MeParts }}\n\nfragment Me_MeParts on Me { profile { firstName } }",
 			"variables":{},
 			"extensions":{}
 		}
 		r = self.s.post(self.api_host, json=payload).json()
 
-		return r['data']['me']['firstName']
+		return r['data']['me']['profile']['firstName']
 	
 	@property
 	def lastname(self):
@@ -549,6 +550,12 @@ class KardSubscription(Kard):
 		period = r['data']['me']['subscription']['plan']['periodUnit']
 
 		return f"{price}€/{period.lower()}"
+
+	@property
+	def raw_price(self):
+		price = self.price
+
+		return float(price.split('€')[0])
 
 	@property
 	def next_billing(self):
@@ -1962,6 +1969,3 @@ class KardVault(Kard):
 
 k = Kard()
 k.init()
-
-for i in range(1,4):
-	print( k.account.reset_pin_code(_input=input(), step=i) )
