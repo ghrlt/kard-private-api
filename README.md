@@ -8,39 +8,53 @@ Made with the help [HTTP Toolkit](https://httptoolkit.tech/) for trafic sniffing
 
 
 ## Installation
-`git clone https://github.com/ghrlt/kard-private-api`<br>
-`cd kard-private-api`
+`pip install kard-private-api`
 
-Open `secrets.json` and replace the values of `accountPin` & `accountTel` with yours.<br>
-When using the API, be sure to initialize the `Kard` class **and** to call `init()` method on it.
+Either create a file named `secrets.json` in your working directory, with the following content:
+```json
+{
+	"vendorIdentifier": null,
+	"userAgent": "ghrlt/kard-private-api /v2.1",
+	"accessToken": null,
+	"refreshToken": null,
+	"accountPin": "Your pin (0000)",
+	"accountTel": "Your phone number (06 00 00 00 00)"
+}
+```
+or don't, and input them in your console when asked.
+
+
+## Usage
 ```python
-import v2
+import kard_private_api as kardapi
 
-k = v2.Kard()
+k = kardapi.Kard()
 k.init()
+
 ...
+
 ```
 
-**You're ready!**<br>
-Checkout some examples to get started: [Examples](https://github.com/ghrlt/kard-private-api/examples)
+**You are ready!**<br>
+Start with some examples [here](https://github.com/ghrlt/kard-private-api/tree/master/examples)
 
 
-### How does it login to my Kard account?
+## FAQ
+#### How does it login to my Kard account?
 
 The login processus include:
 	- Generating a unique identifier, linked to your account
-	- If new uid, confirm sms otp
+	- If new uid, confirm sms otp, else pass
 	- Confirm PIN code
-Then, and only then, we have the `accessToken` and `refreshToken`.
+Then, and only then, we have the `accessToken` and `refreshToken`, which is your account sesame.
 
-The wrapper will automatically create and store your uid and obtain and store your tokens
-
-ALL YOU NEED TO ENSURE IS THAT YOU PROVIDE GOOD VALUES FOR YOUR TEL NUMBER AND PIN CODE IN `secrets.json`
+The wrapper will automatically create and store your uid and obtain and store your tokens, in the current working directory
 
 
 ## License
 
-[GNU GPLv3](https://github.com/ghrlt/kard-private-api/blob/master/LICENSE)
+This repository and all of its content is under the [GNU GPLv3](https://github.com/ghrlt/kard-private-api/blob/master/LICENSE) license.
+
 
 ## Disclaimer
 I shall not, and will not be liable for any misuse or unauthorised use, leading or not to damage to any third-party.
