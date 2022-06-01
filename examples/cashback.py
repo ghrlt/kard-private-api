@@ -2,7 +2,7 @@
 	Cashback related things	
 """
 
-from v2 import Kard
+from kard_private_api import Kard
 
 app = Kard()
 app.init()
